@@ -1,0 +1,13 @@
+# Maxfiy konfiguratsiya
+config/config.php
+
+# Loglar
+logs/*.log
+logs/*.txt
+
+# Eski versiya
+bot.legacy.php
+
+# Vaqtinchalik
+*.tmp
+.DS_Store

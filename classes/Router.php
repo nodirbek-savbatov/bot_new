@@ -1,0 +1,82 @@
+<?php
+/**
+ * Router — update turini aniqlab mos handlerga yo'naltiradi.
+ */
+final class Router
+{
+    public static function dispatch(object $update): void
+    {
+        if (isset($update->inline_query)) {
+            InlineHandler::handle($update->inline_query);
+            return;
+        }
+        if (isset($update->callback_query)) {
+            CallbackHandler::handle($update->callback_query);
+            return;
+        }
+        if (isset($update->message)) {
+            self::message($update->message);
+            return;
+        }
+        // channel_post, edited_message va h.k. — e'tiborsiz
+    }
+
+    private static function message(object $m): void
+    {
+        $cid = (int)($m->chat->id ?? 0);
+        if ($cid === 0) return;
+
+        $from = $m->from ?? null;
+
+        $ctx = [
+            'cid'      => $cid,
+            'mid'      => (int)($m->message_id ?? 0),
+            'text'     => (string)($m->text ?? ($m->caption ?? '')),
+            'video'    => $m->video ?? null,
+            'document' => $m->document ?? null,
+            'from'     => $from,
+            'name'     => $from ? fullName($from) : '',
+            'username' => $from->username ?? '',
+            'step'     => '',
+        ];
+
+        // Foydalanuvchini ro'yxatga olish / yangilash
+        UserRepo::touch($cid, $ctx['name'], $ctx['username']);
+
+        // Blok
+        if (UserRepo::isBlocked($cid) && !AdminRepo::isAdmin($cid)) {
+            Telegram::send($cid, "⛔ Siz botdan bloklangansiz.");
+            return;
+        }
+
+        $text = trim($ctx['text']);
+
+        // Global bekor qilish
+        if ($text === '/bekor' || $text === '/cancel') {
+            State::clear($cid);
+            showMenu($cid, "❌ Amal bekor qilindi.");
+            return;
+        }
+
+        // /start
+        if (str_starts_with($text, '/start')) {
+            StartHandler::handle($ctx);
+            return;
+        }
+
+        // Step timeout (eskirgan holatni avtomatik bekor qilish)
+        if (State::isExpired($cid)) {
+            State::clear($cid);
+            showMenu($cid, "⏰ Vaqt tugadi — amal bekor qilindi. Qaytadan boshlang.");
+        }
+        $ctx['step'] = State::step($cid);
+
+        // Admin handlerlari (iste'mol qilsa — to'xtaymiz)
+        if (AdminRepo::isAdmin($cid) && AdminHandler::handle($ctx)) {
+            return;
+        }
+
+        // Oddiy foydalanuvchi funksiyalari
+        MessageHandler::handle($ctx);
+    }
+}
