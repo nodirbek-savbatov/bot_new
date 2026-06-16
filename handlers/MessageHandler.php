@@ -26,8 +26,15 @@ final class MessageHandler
 
         switch ($text) {
             case '🔍 Kino qidirish':
-                State::set($cid, 'search');
-                showMenu($cid, "🔍 Kino <b>kodini</b> yoki <b>nomini</b> yuboring:\n\n<i>Inline: @" . Telegram::username() . " Avatar</i>", Keyboard::cancel());
+                State::set($cid, State::SEARCH_MOVIE);
+                showMenu($cid,
+                    "🔎 <b>Kino nomini yuboring.</b>\n\n" .
+                    "Masalan:\n" .
+                    "• Qasoskorlar\n" .
+                    "• Tez va G'azabli\n" .
+                    "• John Wick\n\n" .
+                    "❌ Bekor qilish uchun /cancel"
+                );
                 return;
 
             case '📺 Seriallar':
@@ -61,8 +68,8 @@ final class MessageHandler
                 return;
         }
 
-        // Qidiruv stepi
-        if ($step === 'search') {
+        // Qidiruv stepi — foydalanuvchi qidiruvda bo'lsa, keyingi matn kino nomi sifatida olinadi
+        if ($step === State::SEARCH_MOVIE) {
             self::doSearch($cid, $text);
             return;
         }
@@ -199,24 +206,36 @@ final class MessageHandler
 
     private static function doSearch(int $cid, string $q): void
     {
+        // Qidiruv bir martalik — natija chiqishi bilan state avtomatik tozalanadi.
         State::clear($cid);
+
+        $q = trim($q);
+        if ($q === '') {
+            showMenu($cid, "❌ Hech narsa topilmadi.\n\nBoshqa nom bilan urinib ko'ring.");
+            return;
+        }
+
         if (!ChannelManager::checkSubscription($cid)) return;
 
+        StatRepo::inc('searches');
+
+        // To'g'ridan-to'g'ri kod kiritilgan bo'lsa — filmni yetkazamiz.
         if (is_digits($q)) {
             deletePrevMenu($cid);
             if (!deliverFilm($cid, (int)$q)) {
-                showMenu($cid, "❌ Kod <code>" . e($q) . "</code> bo'yicha film topilmadi.");
+                showMenu($cid, "❌ Hech narsa topilmadi.\n\nBoshqa nom bilan urinib ko'ring.");
             }
             return;
         }
 
-        $results = FilmRepo::searchByName($q);
+        // Nom bo'yicha fuzzy qidiruv (ko'p so'zli, katta-kichik harfga befarq).
+        $results = FilmRepo::searchFuzzy($q);
         if (!$results) {
-            showMenu($cid, "🔍 <b>\"" . e($q) . "\"</b> bo'yicha hech narsa topilmadi.");
+            showMenu($cid, "❌ Hech narsa topilmadi.\n\nBoshqa nom bilan urinib ko'ring.");
             return;
         }
         $kb = self::filmButtons($results, true);
-        showMenu($cid, "🔍 <b>\"" . e($q) . "\"</b> — " . count($results) . " ta natija:", $kb);
+        showMenu($cid, "🔎 <b>\"" . e($q) . "\"</b> — " . count($results) . " ta natija topildi:", $kb);
     }
 
     /** Film tugmalari massivi. */

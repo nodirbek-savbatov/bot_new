@@ -405,6 +405,58 @@ Repozitoriyaga faqat `config.sample.php` tushadi.
 
 ---
 
+## 🟢 17. "🔍 Kino qidirish" — qidiruv rejimi va fuzzy qidiruv
+
+**Eski kod** (`MessageHandler.php`, `FilmRepo.php`):
+```php
+// Tugma: inline maslahatli yordam matni chiqardi
+case '🔍 Kino qidirish':
+    State::set($cid, 'search');
+    showMenu($cid, "🔍 Kino kodini yoki nomini yuboring:\n\nInline: @bot Avatar", Keyboard::cancel());
+
+// Qidiruv: faqat bitta substring LIKE
+public static function searchByName(string $q, int $limit = 20): array {
+    $like = '%' . ... . '%';
+    return Database::fetchAll("SELECT * FROM films WHERE title LIKE ? ORDER BY views DESC ...", [$like]);
+}
+```
+
+**Muammo:**
+1. Tugma bosilganda asosan **inline maslahat** ko'rsatilardi — foydalanuvchi inline yozishni
+   o'ylab chalkashardi; oddiy matn rejimi aniq emas edi.
+2. Qidiruv **yagona substring LIKE** edi: ko'p so'zli so'rov (`"tez gazabli"`),
+   so'z tartibi o'zgargan yoki qisman nom **topilmasdi**.
+3. Qidiruv rejimida **alohida timeout yo'q** edi (global 10 daqiqaga bog'liq).
+
+**Yangi kod:**
+```php
+// 1) Aniq qidiruv rejimi — to'g'ridan-to'g'ri matn so'raydi (State::SEARCH_MOVIE)
+case '🔍 Kino qidirish':
+    State::set($cid, State::SEARCH_MOVIE);
+    showMenu($cid, "🔎 <b>Kino nomini yuboring.</b>\n\nMasalan:\n• Qasoskorlar\n"
+        . "• Tez va G'azabli\n• John Wick\n\n❌ Bekor qilish uchun /cancel");
+
+// 2) Fuzzy qidiruv — so'zlarga ajratish + relevance ranking (case-insensitive)
+FilmRepo::searchFuzzy($q);   // har so'z LIKE (OR), aniqlik bo'yicha tartib
+
+// 3) Qidiruv uchun 5 daqiqalik alohida timeout
+//    State::isExpired() endi step === SEARCH_MOVIE bo'lsa state.search_timeout (300s) ishlatadi
+```
+
+**Sababi:**
+- **UX:** Tugma bosilishi bilan foydalanuvchi avtomatik qidiruv rejimiga o'tadi va keyingi
+  yozgan matni kino nomi sifatida ishlanadi — inline chalkashlik yo'q.
+- **Topish darajasi:** `searchFuzzy` so'rovni so'zlarga bo'lib, kamida bitta so'z mos kelsa
+  natija qaytaradi va `relevance` (aniq tenglik > prefiks > to'liq ibora > mos so'z soni)
+  bo'yicha tartiblaydi → ko'p so'zli/qisman/tartibsiz so'rovlar ham topiladi.
+- **Xavfsizlik/barqarorlik:** Qidiruv bir martalik — natija chiqishi bilan `State::clear`,
+  5 daqiqada avtomatik eskirish (memory leak yo'q, holat DB'da + cron cleanup).
+- Har bir foydalanuvchi holati `user_id` bo'yicha alohida — bir kishi qidiruvda bo'lsa,
+  boshqalarning holatiga ta'sir qilmaydi. `/cancel` va `/start` Router'da qidiruvdan
+  oldin ushlanadi — buyruqlar holatni buzmaydi.
+
+---
+
 ## ✳️ Qo'shimcha yaxshilanishlar
 
 | Joy | Yaxshilanish |

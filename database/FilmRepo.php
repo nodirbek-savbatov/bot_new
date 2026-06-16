@@ -68,6 +68,62 @@ final class FilmRepo
         );
     }
 
+    /**
+     * Fuzzy nom qidiruvi — ko'p so'zli, case-insensitive, relevance bo'yicha tartiblangan.
+     *  - So'rov so'zlarga bo'linadi; har bir so'z alohida LIKE shart bo'ladi.
+     *  - Qator topiladi agar KAMIDA bitta so'z mos kelsa (OR), shu bilan
+     *    "tez gazabli" → "Tez va G'azabli" kabi natijalarni ham qaytaradi.
+     *  - Tartib: aniq tenglik > boshlanishi mos > to'liq ibora ichida > mos so'zlar soni.
+     * Yagona LIKE (searchByName) ko'p so'zli/qisman so'rovlarda topa olmagan kamchilikni yopadi.
+     */
+    public static function searchFuzzy(string $q, int $limit = 20): array
+    {
+        $q = trim(preg_replace('/\s+/u', ' ', $q));
+        if ($q === '') return [];
+        $limit = max(1, min($limit, 50));
+
+        // So'rovni so'zlarga ajratamiz (qisqa "shovqin" so'zlarni tashlaymiz).
+        $words = array_values(array_filter(
+            explode(' ', mb_strtolower($q, 'UTF-8')),
+            static fn($w) => mb_strlen($w, 'UTF-8') >= 2
+        ));
+        if (!$words) $words = [mb_strtolower($q, 'UTF-8')];
+
+        $esc = static fn(string $s): string =>
+            str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $s);
+
+        $ql    = mb_strtolower($q, 'UTF-8');
+        $whole = '%' . $esc($ql) . '%';
+
+        // Placeholderlar SQL ichida SELECT (relevance), keyin WHERE tartibida keladi —
+        // shuning uchun parametrlarni ham aynan shu tartibda alohida yig'amiz.
+        $score = ["(CASE WHEN LOWER(title) = ?    THEN 1000 ELSE 0 END)",  // aniq tenglik
+                  "(CASE WHEN LOWER(title) LIKE ? THEN 500  ELSE 0 END)",  // boshlanishi mos
+                  "(CASE WHEN LOWER(title) LIKE ? THEN 300  ELSE 0 END)"]; // to'liq ibora ichida
+        $scoreParams = [$ql, $esc($ql) . '%', $whole];
+
+        $conds       = [];
+        $whereParams = [];
+        foreach ($words as $w) {
+            $like          = '%' . $esc($w) . '%';
+            $score[]       = "(CASE WHEN LOWER(title) LIKE ? THEN 50 ELSE 0 END)"; // har mos so'z
+            $scoreParams[] = $like;
+            $conds[]       = "LOWER(title) LIKE ?";
+            $whereParams[] = $like;
+        }
+
+        $scoreSql = implode(' + ', $score);
+        $where    = implode(' OR ', $conds);
+
+        $sql = "SELECT *, ($scoreSql) AS relevance
+                FROM films
+                WHERE $where
+                ORDER BY relevance DESC, views DESC, code DESC
+                LIMIT $limit";
+
+        return Database::fetchAll($sql, array_merge($scoreParams, $whereParams));
+    }
+
     /** Eng so'nggi filmlar (sahifalangan). */
     public static function latestFilms(int $page, int $perPage = 8): array
     {

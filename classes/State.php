@@ -8,6 +8,9 @@
  */
 final class State
 {
+    /** Kino qidiruv rejimi step nomi (FSM). */
+    public const SEARCH_MOVIE = 'search';
+
     private static array $cache = [];
 
     private static function load(int $uid): array
@@ -64,7 +67,12 @@ final class State
     {
         $r = self::load($uid);
         if ($r['step'] === '' || $r['ts'] === 0) return false;
-        $timeout = (int)Config::get('state.timeout', 600);
+        // Qidiruv rejimi uchun qisqaroq alohida timeout (5 daqiqa) qo'llanadi.
+        if ($r['step'] === self::SEARCH_MOVIE) {
+            $timeout = (int)Config::get('state.search_timeout', 300);
+        } else {
+            $timeout = (int)Config::get('state.timeout', 600);
+        }
         return (time() - $r['ts']) > $timeout;
     }
 
