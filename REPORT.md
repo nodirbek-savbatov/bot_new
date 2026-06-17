@@ -457,6 +457,42 @@ FilmRepo::searchFuzzy($q);   // har so'z LIKE (OR), aniqlik bo'yicha tartib
 
 ---
 
+## 🟢 18. Telegram Web App (Mini App) integratsiyasi
+
+**Eski holat:** Web App yo'q edi — faqat bot tugmalari/inline.
+
+**Talab:** Mavjud bot va bazani buzmasdan iOS uslubidagi Mini App qo'shish;
+videoni Web App ichida emas, botga yuborib `deliverFilm` orqali yetkazish;
+toast + bot bildirishnomalarini sinxronlash (anti-spam bilan).
+
+**Yondashuv (muhim qaror — `sendData()` vs HTTP API):**
+`Telegram.WebApp.sendData()` app'ni **yopadi**, lekin talablar (ichki Toast, sevimli
+qo'shganda app ochiq qolishi, "Ko'rish"dan keyin "Botga o'tish" toasti) app **ochiq**
+qolishini talab qiladi. Shuning uchun:
+```php
+// Asosiy yo'l — HTTP API (app ochiq qoladi → toast ishlaydi)
+webapp/api.php → WebApp::validate(initData)  // HMAC, soxta so'rov rad etiladi
+              → WebAppHandler::process()      // bot bilan BIR XIL mantiq, BIR XIL DB
+              → JSON
+
+// sendData ham qo'llab-quvvatlanadi (explicit talab)
+Router::message → isset($m->web_app_data) → WebAppHandler::handleData()
+```
+
+**Video:** Web App'da saqlanmaydi/strim qilinmaydi. "Ko'rish" → `WebAppHandler::aWatch`
+→ mavjud `deliverFilm()` (baza kanaldan `copyMessage` = file_id) → chatga video.
+
+**Anti-spam:** `notify_log` jadvali + `WebAppRepo::shouldNotify()` — bir xil action
+`notify_ttl` (5s) ichida takror bo'lsa, bot xabari qayta yuborilmaydi.
+
+**Xavfsizlik:** har so'rov `initData` HMAC-SHA256 (bot token) bilan tekshiriladi
+(`classes/WebApp.php`); blok va rate-limit bot bilan bir xil qoidalarda.
+
+**Sababi:** Foydalanuvchi Web App va botni bitta tizim sifatida his qiladi —
+toast (Web App) va bildirishnoma (bot) birga ishlaydi, ma'lumot bir bazada.
+
+---
+
 ## ✳️ Qo'shimcha yaxshilanishlar
 
 | Joy | Yaxshilanish |

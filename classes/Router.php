@@ -49,6 +49,12 @@ final class Router
             return;
         }
 
+        // Web App'dan kelgan ma'lumot (Telegram.WebApp.sendData) — alohida yo'l
+        if (isset($m->web_app_data)) {
+            WebAppHandler::handleData($cid, (string)($m->web_app_data->data ?? ''));
+            return;
+        }
+
         $text = trim($ctx['text']);
 
         // Global bekor qilish

@@ -104,6 +104,23 @@ if ($webhookUrl) {
     $out("⚠️ webhook_url berilmagan — qo'lda o'rnating.");
 }
 
+// ---- 6.1) Web App chat menyu tugmasi ----
+$webappUrl = (string)Config::get('webapp.url');
+if ($webappUrl !== '') {
+    $res = Telegram::call('setChatMenuButton', [
+        'menu_button' => json_encode([
+            'type' => 'web_app',
+            'text' => '🎬 Kino App',
+            'web_app' => ['url' => $webappUrl],
+        ], JSON_UNESCAPED_UNICODE),
+    ]);
+    if (is_array($res) && ($res['ok'] ?? false)) {
+        $out("✅ Web App menyu tugmasi o'rnatildi: $webappUrl");
+    } else {
+        $out('⚠️ Menyu tugmasi o\'rnatilmadi (webapp.url HTTPS ekanini tekshiring).');
+    }
+}
+
 // ---- 7) Default kanallarni seed (faqat bo'sh bo'lsa) ----
 if (ChannelRepo::count() === 0) {
     $defaults = [

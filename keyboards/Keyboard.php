@@ -13,6 +13,13 @@ final class Keyboard
             [['text' => '🆕 Yangi filmlar'], ['text' => '⭐ Top filmlar']],
             [['text' => '📋 Barcha kinolar'], ['text' => '📞 Yordam']],
         ];
+
+        // Web App tugmasi (reply-keyboard web_app — sendData() shu yo'l orqali ishlaydi).
+        $webapp = (string)Config::get('webapp.url', '');
+        if ($webapp !== '') {
+            array_unshift($kb, [['text' => '🎬 Kino App', 'web_app' => ['url' => $webapp]]]);
+        }
+
         if ($isAdmin) {
             $kb[] = [['text' => '👑 Admin panel']];
         }

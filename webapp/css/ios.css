@@ -1,0 +1,135 @@
+/* =====================================================================
+   ios.css — iOS uslubidagi komponentlar: nav bar, tab bar, ro'yxat
+   qatorlari, segmented control, tugmalar, blur effektlari.
+   ===================================================================== */
+
+/* ---------- Yuqori navigatsiya paneli (blur) ---------- */
+.navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(var(--header-h) + var(--safe-top));
+    padding-top: var(--safe-top);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--header-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--separator);
+    z-index: 100;
+}
+.navbar__title {
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    letter-spacing: -0.01em;
+    max-width: 60%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.navbar__action {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    margin-top: calc(var(--safe-top) / 2);
+    font-size: var(--fs-md); color: var(--link);
+    display: flex; align-items: center; gap: 4px;
+    padding: var(--sp-2);
+}
+.navbar__action--left { left: var(--sp-2); }
+.navbar__action--right { right: var(--sp-3); font-weight: var(--fw-medium); }
+
+/* ---------- Pastki tab bar (blur) ---------- */
+.tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: calc(var(--tabbar-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    display: flex;
+    background: var(--header-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid var(--separator);
+    z-index: 100;
+}
+.tabbar__item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    font-size: 10px; font-weight: var(--fw-medium);
+    color: var(--hint);
+    transition: color var(--dur-fast);
+}
+.tabbar__item svg { width: 26px; height: 26px; }
+.tabbar__item.active { color: var(--accent); }
+.tabbar__item:active { opacity: 0.6; }
+
+/* ---------- iOS ro'yxat (grouped inset) ---------- */
+.list {
+    background: var(--card);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+.list__row {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    min-height: 48px;
+    position: relative;
+    transition: background var(--dur-fast);
+}
+.list__row:active { background: var(--separator); }
+.list__row + .list__row::before {
+    content: ""; position: absolute; top: 0; left: var(--sp-4); right: 0;
+    height: 0.5px; background: var(--separator);
+}
+.list__row-title { flex: 1; font-size: var(--fs-md); }
+.list__row-sub { font-size: var(--fs-sm); color: var(--hint); }
+.list__row-value { color: var(--hint); font-size: var(--fs-sm); }
+.list__chevron { color: var(--hint); opacity: 0.5; }
+
+/* ---------- Segmented control ---------- */
+.segmented {
+    display: flex;
+    background: color-mix(in srgb, var(--hint) 16%, transparent);
+    border-radius: var(--r-sm);
+    padding: 2px;
+    gap: 2px;
+}
+.segmented__opt {
+    flex: 1;
+    text-align: center;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-sm); font-weight: var(--fw-medium);
+    border-radius: calc(var(--r-sm) - 2px);
+    color: var(--text);
+    transition: background var(--dur-fast), box-shadow var(--dur-fast);
+}
+.segmented__opt.active {
+    background: var(--card);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ---------- Tugmalar ---------- */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-4);
+    font-size: var(--fs-md); font-weight: var(--fw-semibold);
+    border-radius: var(--r-md);
+    background: var(--accent); color: var(--accent-text);
+    transition: transform var(--dur-fast), opacity var(--dur-fast), filter var(--dur-fast);
+}
+.btn:active { transform: scale(0.97); filter: brightness(0.94); }
+.btn:disabled { opacity: 0.5; pointer-events: none; }
+.btn--lg { padding: var(--sp-5); font-size: var(--fs-lg); border-radius: var(--r-lg); }
+.btn--secondary { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.btn--ghost { background: var(--card); color: var(--text); box-shadow: var(--shadow-sm); }
+.btn--danger { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.btn--success { background: var(--success); color: #fff; }
+
+/* Pill / chip */
+.chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px var(--sp-3);
+    font-size: var(--fs-sm); font-weight: var(--fw-medium);
+    background: var(--card); color: var(--text);
+    border-radius: var(--r-full);
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+.chip--accent { background: var(--accent); color: var(--accent-text); box-shadow: none; }

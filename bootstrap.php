@@ -29,13 +29,14 @@ require BASE_PATH . '/classes/Database.php';
 require BASE_PATH . '/classes/Telegram.php';
 require BASE_PATH . '/classes/State.php';
 require BASE_PATH . '/classes/RateLimiter.php';
+require BASE_PATH . '/classes/WebApp.php';
 require BASE_PATH . '/classes/Router.php';
 
 Telegram::init((string)Config::get('bot.token'), (string)Config::get('bot.api', 'https://api.telegram.org'));
 RateLimiter::init(BASE_PATH . '/logs/rl');
 
 // ---- 3) Ma'lumot qatlami (repositories) ----
-foreach (['SettingRepo', 'UserRepo', 'AdminRepo', 'FilmRepo', 'StatRepo', 'ChannelRepo', 'BroadcastRepo'] as $repo) {
+foreach (['SettingRepo', 'UserRepo', 'AdminRepo', 'FilmRepo', 'StatRepo', 'ChannelRepo', 'BroadcastRepo', 'WebAppRepo'] as $repo) {
     require BASE_PATH . "/database/$repo.php";
 }
 
@@ -46,7 +47,7 @@ require BASE_PATH . '/functions/helpers.php';
 require BASE_PATH . '/keyboards/Keyboard.php';
 require BASE_PATH . '/admin/ChannelManager.php';
 require BASE_PATH . '/inline/InlineHandler.php';
-foreach (['StartHandler', 'MessageHandler', 'AdminHandler', 'CallbackHandler'] as $h) {
+foreach (['StartHandler', 'MessageHandler', 'AdminHandler', 'CallbackHandler', 'WebAppHandler'] as $h) {
     require BASE_PATH . "/handlers/$h.php";
 }
 

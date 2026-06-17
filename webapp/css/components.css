@@ -1,0 +1,237 @@
+/* =====================================================================
+   components.css — toast, poster kartochkalar, skeleton, bo'sh holat,
+   hero, spinner, badge va boshqalar.
+   ===================================================================== */
+
+/* ---------- TOAST (Web App ichidagi bildirishnoma) ---------- */
+#toast-host {
+    position: fixed;
+    top: calc(var(--safe-top) + var(--header-h) + 8px);
+    left: 0; right: 0;
+    display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
+    z-index: 2000;
+    pointer-events: none;
+    padding: 0 var(--sp-4);
+}
+.toast {
+    pointer-events: auto;
+    width: 100%; max-width: 460px;
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--card);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    border-left: 4px solid var(--hint);
+    animation: toast-in var(--dur-mid) var(--ease-spring) both;
+}
+.toast.hide { animation: toast-out var(--dur-fast) var(--ease-ios) both; }
+.toast__icon {
+    width: 26px; height: 26px; flex: 0 0 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--r-full); font-size: 15px; color: #fff;
+}
+.toast__body { flex: 1; min-width: 0; }
+.toast__title { font-size: var(--fs-sm); font-weight: var(--fw-semibold); }
+.toast__msg { font-size: var(--fs-sm); color: var(--hint); }
+.toast__action {
+    flex: 0 0 auto;
+    font-size: var(--fs-sm); font-weight: var(--fw-semibold);
+    color: var(--accent);
+    padding: var(--sp-2);
+}
+.toast--success { border-left-color: var(--success); }
+.toast--success .toast__icon { background: var(--success); }
+.toast--error { border-left-color: var(--danger); }
+.toast--error .toast__icon { background: var(--danger); }
+.toast--warning { border-left-color: var(--warning); }
+.toast--warning .toast__icon { background: var(--warning); }
+
+/* ---------- Poster kartochka (rasm yo'q → gradient + harf) ---------- */
+.card {
+    display: flex; flex-direction: column;
+    width: 100%;
+    animation: fade-up var(--dur-mid) var(--ease-ios) both;
+}
+.poster {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--dur-fast) var(--ease-ios);
+}
+.card:active .poster { transform: scale(0.96); }
+.poster__letter {
+    font-size: var(--fs-3xl); font-weight: var(--fw-bold);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    opacity: 0.95;
+}
+.poster__badge {
+    position: absolute; top: 6px; left: 6px;
+    font-size: 10px; font-weight: var(--fw-bold);
+    padding: 3px 7px; border-radius: var(--r-full);
+    background: rgba(0,0,0,0.5); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.poster__fav {
+    position: absolute; top: 6px; right: 6px;
+    width: 28px; height: 28px; border-radius: var(--r-full);
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.4); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    font-size: 14px;
+}
+.poster__fav.on { animation: pop var(--dur-mid) var(--ease-spring); }
+.poster__meta {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 18px 8px 6px;
+    font-size: 11px; font-weight: var(--fw-semibold);
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+    display: flex; align-items: center; gap: 4px;
+}
+.card__title {
+    margin-top: 6px;
+    font-size: var(--fs-sm); font-weight: var(--fw-medium);
+    line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.card--wide { flex: 0 0 116px; width: 116px; }
+
+/* ---------- Ro'yxat kartochkasi (gorizontal) ---------- */
+.mrow {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-2);
+    background: var(--card); border-radius: var(--r-md);
+    box-shadow: var(--shadow-sm);
+    animation: fade-up var(--dur-mid) var(--ease-ios) both;
+}
+.mrow:active { background: var(--separator); }
+.mrow__poster {
+    flex: 0 0 48px; width: 48px; height: 64px; border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: var(--fw-bold); font-size: var(--fs-lg);
+}
+.mrow__body { flex: 1; min-width: 0; }
+.mrow__title {
+    font-size: var(--fs-md); font-weight: var(--fw-medium);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mrow__sub { font-size: var(--fs-xs); color: var(--hint); margin-top: 2px; }
+.mrow__rank { font-size: var(--fs-lg); font-weight: var(--fw-bold); color: var(--hint); width: 22px; text-align: center; }
+
+/* ---------- Hero (bosh sahifa banner) ---------- */
+.hero {
+    position: relative;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    display: flex; align-items: flex-end;
+    color: #fff;
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--sp-4);
+}
+.hero__content { position: relative; padding: var(--sp-5); }
+.hero__kicker { font-size: var(--fs-xs); font-weight: var(--fw-semibold); opacity: 0.85; text-transform: uppercase; letter-spacing: 0.06em; }
+.hero__title { font-size: var(--fs-2xl); font-weight: var(--fw-bold); letter-spacing: -0.02em; margin: 4px 0 10px; text-shadow: 0 2px 16px rgba(0,0,0,0.4); }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0,0,0,0.55)); }
+
+/* ---------- Skeleton (yuklanish) ---------- */
+.skeleton {
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--hint) 14%, transparent) 25%,
+        color-mix(in srgb, var(--hint) 26%, transparent) 37%,
+        color-mix(in srgb, var(--hint) 14%, transparent) 63%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s linear infinite;
+    border-radius: var(--r-md);
+}
+.skeleton--poster { aspect-ratio: 2 / 3; }
+.skeleton--line { height: 12px; border-radius: var(--r-full); margin-top: 6px; }
+.skeleton--line.short { width: 60%; }
+
+/* ---------- Spinner ---------- */
+.spinner {
+    width: 22px; height: 22px;
+    border: 2.5px solid color-mix(in srgb, var(--hint) 30%, transparent);
+    border-top-color: var(--accent);
+    border-radius: var(--r-full);
+    animation: spin 0.7s linear infinite;
+}
+.spinner--center { margin: var(--sp-10) auto; }
+
+/* ---------- Bo'sh holat ---------- */
+.empty {
+    text-align: center;
+    padding: var(--sp-10) var(--sp-5);
+    animation: scale-in var(--dur-mid) var(--ease-spring) both;
+}
+.empty__icon { font-size: 56px; margin-bottom: var(--sp-3); }
+.empty__title { font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-bottom: var(--sp-1); }
+.empty__text { font-size: var(--fs-sm); color: var(--hint); }
+
+/* ---------- Search input ---------- */
+.search-bar {
+    display: flex; align-items: center; gap: var(--sp-2);
+    background: color-mix(in srgb, var(--hint) 14%, transparent);
+    border-radius: var(--r-sm);
+    padding: var(--sp-2) var(--sp-3);
+}
+.search-bar input {
+    flex: 1; background: none; border: none; outline: none; color: var(--text);
+}
+.search-bar input::placeholder { color: var(--hint); }
+.search-bar__icon { color: var(--hint); flex: 0 0 auto; }
+.search-bar__clear { color: var(--hint); font-size: var(--fs-md); padding: 2px; }
+
+/* ---------- Stat kartochkalar (profil) ---------- */
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
+.stat {
+    background: var(--card); border-radius: var(--r-md);
+    padding: var(--sp-4); text-align: center; box-shadow: var(--shadow-sm);
+}
+.stat__num { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--accent); }
+.stat__label { font-size: var(--fs-sm); color: var(--hint); margin-top: 2px; }
+
+/* ---------- Avatar ---------- */
+.avatar {
+    width: 76px; height: 76px; border-radius: var(--r-full);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: var(--fs-2xl); font-weight: var(--fw-bold);
+    box-shadow: var(--shadow-md);
+}
+
+/* ---------- Detal sahifa (movie) ---------- */
+.detail-hero {
+    position: relative;
+    margin: calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4)) 0;
+    aspect-ratio: 3 / 4;
+    max-height: 56vh;
+    display: flex; align-items: flex-end;
+    color: #fff;
+}
+.detail-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 35%, rgba(0,0,0,0.75)); }
+.detail-hero__big { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); font-size: 96px; font-weight: var(--fw-bold); opacity: 0.4; }
+.detail-hero__content { position: relative; padding: var(--sp-5); width: 100%; }
+.detail-hero__title { font-size: var(--fs-2xl); font-weight: var(--fw-bold); letter-spacing: -0.02em; text-shadow: 0 2px 16px rgba(0,0,0,0.5); }
+.detail-meta { display: flex; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-1) 0 0; font-size: var(--fs-sm); opacity: 0.95; }
+.detail-desc { margin-top: var(--sp-4); font-size: var(--fs-md); line-height: 1.55; color: var(--text); }
+
+.action-bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
+    display: flex; gap: var(--sp-3); align-items: center;
+    background: var(--header-bg);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-top: 0.5px solid var(--separator);
+    z-index: 90;
+}
+.action-bar .btn { flex: 1; }
+.icon-btn {
+    flex: 0 0 52px; height: 52px; border-radius: var(--r-md);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--card); box-shadow: var(--shadow-sm); font-size: 22px;
+    transition: transform var(--dur-fast);
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.on { animation: pop var(--dur-mid) var(--ease-spring); }

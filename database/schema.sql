@@ -119,4 +119,31 @@ CREATE TABLE IF NOT EXISTS broadcast_queue (
     KEY idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---- Sevimlilar (Web App) ----
+CREATE TABLE IF NOT EXISTS favorites (
+    user_id    BIGINT   NOT NULL,
+    film_code  INT      NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (user_id, film_code),
+    KEY idx_user (user_id),
+    KEY idx_film (film_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---- Ko'rilganlar tarixi (Web App) — (user, film) bo'yicha yagona, vaqti yangilanadi ----
+CREATE TABLE IF NOT EXISTS watch_history (
+    user_id    BIGINT   NOT NULL,
+    film_code  INT      NOT NULL,
+    watched_at DATETIME NOT NULL,
+    PRIMARY KEY (user_id, film_code),
+    KEY idx_user_time (user_id, watched_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---- Bildirishnoma dedup (anti-spam): foydalanuvchi bo'yicha oxirgi action imzosi ----
+CREATE TABLE IF NOT EXISTS notify_log (
+    user_id    BIGINT       NOT NULL,
+    signature  VARCHAR(160) NOT NULL DEFAULT '',
+    updated_at DATETIME     NOT NULL,
+    PRIMARY KEY (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

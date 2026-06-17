@@ -1,0 +1,75 @@
+/* =====================================================================
+   animations.css — keyframe'lar va o'tish effektlari
+   ===================================================================== */
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(-18px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-18px) scale(0.96); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+}
+
+@keyframes pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.28); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
+}
+
+/* Yordamchi klasslar */
+.anim-fade   { animation: fade-in var(--dur-mid) var(--ease-ios) both; }
+.anim-up     { animation: fade-up var(--dur-mid) var(--ease-ios) both; }
+.anim-scale  { animation: scale-in var(--dur-mid) var(--ease-spring) both; }
+
+/* Ro'yxat elementlari bosqichma-bosqich chiqishi */
+.stagger > * { animation: fade-up var(--dur-mid) var(--ease-ios) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(8) { animation-delay: 0.30s; }
+
+/* Bosilganda iOS "press" effekti */
+.pressable { transition: transform var(--dur-fast) var(--ease-ios), opacity var(--dur-fast); }
+.pressable:active { transform: scale(0.96); opacity: 0.85; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        transition-duration: 0.001s !important;
+    }
+}
