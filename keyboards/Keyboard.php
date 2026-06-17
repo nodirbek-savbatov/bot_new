@@ -5,6 +5,19 @@
  */
 final class Keyboard
 {
+    /**
+     * Web App tugmasi qatorini qaytaradi (config'da HTTPS url bo'lsa).
+     * Bo'lmasa bo'sh massiv — keyboardlar tugmasiz ishlayveradi.
+     */
+    private static function webAppRow(): array
+    {
+        $webapp = (string)Config::get('webapp.url', '');
+        if ($webapp === '') {
+            return [];
+        }
+        return [['text' => '🎬 Kino App', 'web_app' => ['url' => $webapp]]];
+    }
+
     /** Pastki asosiy menyu (reply keyboard). */
     public static function main(bool $isAdmin = false): string
     {
@@ -15,9 +28,9 @@ final class Keyboard
         ];
 
         // Web App tugmasi (reply-keyboard web_app — sendData() shu yo'l orqali ishlaydi).
-        $webapp = (string)Config::get('webapp.url', '');
-        if ($webapp !== '') {
-            array_unshift($kb, [['text' => '🎬 Kino App', 'web_app' => ['url' => $webapp]]]);
+        $row = self::webAppRow();
+        if ($row !== []) {
+            array_unshift($kb, $row);
         }
 
         if ($isAdmin) {
@@ -29,17 +42,25 @@ final class Keyboard
     /** Admin paneli (reply keyboard). */
     public static function admin(): string
     {
+        $kb = [
+            [['text' => '➕ Film yuklash'],     ['text' => '📺 Serial yuklash']],
+            [['text' => '✏️ Tahrirlash'],       ['text' => "🗑 O'chirish"]],
+            [['text' => '📨 Xabar yuborish'],   ['text' => '📊 Statistika']],
+            [['text' => '👥 Foydalanuvchilar'], ['text' => '📢 Kanallar']],
+            [['text' => '🔐 Adminlar'],         ['text' => '⚙️ Sozlamalar']],
+            [['text' => '👤 Oddiy rejim']],
+        ];
+
+        // Web App tugmasi — admin rejimida ham eng tepada ko'rinsin.
+        $row = self::webAppRow();
+        if ($row !== []) {
+            array_unshift($kb, $row);
+        }
+
         return json_encode([
             'resize_keyboard' => true,
             'is_persistent'   => true,
-            'keyboard'        => [
-                [['text' => '➕ Film yuklash'],     ['text' => '📺 Serial yuklash']],
-                [['text' => '✏️ Tahrirlash'],       ['text' => "🗑 O'chirish"]],
-                [['text' => '📨 Xabar yuborish'],   ['text' => '📊 Statistika']],
-                [['text' => '👥 Foydalanuvchilar'], ['text' => '📢 Kanallar']],
-                [['text' => '🔐 Adminlar'],         ['text' => '⚙️ Sozlamalar']],
-                [['text' => '👤 Oddiy rejim']],
-            ],
+            'keyboard'        => $kb,
         ]);
     }
 
