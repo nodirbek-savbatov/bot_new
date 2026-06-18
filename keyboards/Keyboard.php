@@ -25,6 +25,7 @@ final class Keyboard
             [['text' => '🔍 Kino qidirish'], ['text' => '📺 Seriallar']],
             [['text' => '🆕 Yangi filmlar'], ['text' => '⭐ Top filmlar']],
             [['text' => '📋 Barcha kinolar'], ['text' => '📞 Yordam']],
+            [['text' => '🤖 AI Yordamchi'],  ['text' => '👤 Profil']],
         ];
 
         // Web App tugmasi (reply-keyboard web_app — sendData() shu yo'l orqali ishlaydi).
@@ -48,7 +49,7 @@ final class Keyboard
             [['text' => '📨 Xabar yuborish'],   ['text' => '📊 Statistika']],
             [['text' => '👥 Foydalanuvchilar'], ['text' => '📢 Kanallar']],
             [['text' => '🔐 Adminlar'],         ['text' => '⚙️ Sozlamalar']],
-            [['text' => '👤 Oddiy rejim']],
+            [['text' => '🪙 Nano Coin'],        ['text' => '👤 Oddiy rejim']],
         ];
 
         // Web App tugmasi — admin rejimida ham eng tepada ko'rinsin.
@@ -125,5 +126,52 @@ final class Keyboard
         $btns[] = ['text' => "$page/$pages", 'callback_data' => 'noop'];
         if ($page < $pages) $btns[] = ['text' => '➡️', 'callback_data' => "$prefix:" . ($page + 1)];
         return $btns;
+    }
+
+    // ================= AI / Nano Coin =================
+
+    /** AI rejimi reply-keyboardi — faqat chiqish tugmasi (boshqa menyular yashirin). */
+    public static function ai(): string
+    {
+        return json_encode([
+            'resize_keyboard' => true,
+            'is_persistent'   => true,
+            'keyboard'        => [[['text' => '❌ AI Rejimidan Chiqish']]],
+        ]);
+    }
+
+    /** Profil inline tugmalari: kunlik bonus (agar mavjud) + Web App. */
+    public static function profileInline(bool $dailyAvailable): array
+    {
+        $kb = [];
+        if ($dailyAvailable) {
+            $kb[] = [['text' => '🎁 Kunlik bonusni olish', 'callback_data' => 'nano_daily']];
+        }
+        $row = self::webAppRow();
+        if ($row !== []) {
+            $kb[] = $row;
+        }
+        return $kb;
+    }
+
+    /** Admin Nano Coin paneli (inline). */
+    public static function adminNano(): array
+    {
+        return [
+            [
+                ['text' => '💰 Coin berish',  'callback_data' => 'nano_give'],
+                ['text' => '💸 Coin yechish', 'callback_data' => 'nano_take'],
+            ],
+            [
+                ['text' => "🔍 Balans ko'rish", 'callback_data' => 'nano_view'],
+                ['text' => '🏆 Eng boylar',      'callback_data' => 'nano_top'],
+            ],
+            [['text' => '📜 Tranzaksiyalar', 'callback_data' => 'nano_txns:1']],
+            [
+                ['text' => '✏️ Register', 'callback_data' => 'nano_cfg_reg'],
+                ['text' => '✏️ Kunlik',   'callback_data' => 'nano_cfg_daily'],
+                ['text' => '✏️ AI narxi', 'callback_data' => 'nano_cfg_cost'],
+            ],
+        ];
     }
 }

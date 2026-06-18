@@ -36,7 +36,7 @@ Telegram::init((string)Config::get('bot.token'), (string)Config::get('bot.api', 
 RateLimiter::init(BASE_PATH . '/logs/rl');
 
 // ---- 3) Ma'lumot qatlami (repositories) ----
-foreach (['SettingRepo', 'UserRepo', 'AdminRepo', 'FilmRepo', 'StatRepo', 'ChannelRepo', 'BroadcastRepo', 'WebAppRepo'] as $repo) {
+foreach (['SettingRepo', 'UserRepo', 'AdminRepo', 'FilmRepo', 'StatRepo', 'ChannelRepo', 'BroadcastRepo', 'WebAppRepo', 'NanoRepo', 'AiRepo'] as $repo) {
     require BASE_PATH . "/database/$repo.php";
 }
 
@@ -46,8 +46,15 @@ require BASE_PATH . '/functions/helpers.php';
 // ---- 5) Klaviaturalar / admin / inline / handlerlar ----
 require BASE_PATH . '/keyboards/Keyboard.php';
 require BASE_PATH . '/admin/ChannelManager.php';
+require BASE_PATH . '/admin/NanoAdmin.php';
 require BASE_PATH . '/inline/InlineHandler.php';
-foreach (['StartHandler', 'MessageHandler', 'AdminHandler', 'CallbackHandler', 'WebAppHandler'] as $h) {
+
+// AI Kino Yordamchisi moduli (alohida service'lar)
+foreach (['GeminiClient', 'AiPrompt', 'AiService', 'AiHandler'] as $ai) {
+    require BASE_PATH . "/ai/$ai.php";
+}
+
+foreach (['StartHandler', 'MessageHandler', 'AdminHandler', 'CallbackHandler', 'WebAppHandler', 'ProfileHandler'] as $h) {
     require BASE_PATH . "/handlers/$h.php";
 }
 

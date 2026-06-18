@@ -9,7 +9,7 @@ final class MessageHandler
     private const MENU_BUTTONS = [
         '🔍 Kino qidirish', '📺 Seriallar', '🆕 Yangi filmlar',
         '⭐ Top filmlar', '📋 Barcha kinolar', '📞 Yordam',
-        '👑 Admin panel',
+        '👤 Profil', '👑 Admin panel',
     ];
 
     public static function handle(array $ctx): void
@@ -55,6 +55,10 @@ final class MessageHandler
 
             case '📞 Yordam':
                 self::help($cid);
+                return;
+
+            case '👤 Profil':
+                ProfileHandler::show($cid);
                 return;
 
             case '👑 Admin panel':

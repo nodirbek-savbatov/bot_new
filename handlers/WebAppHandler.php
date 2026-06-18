@@ -47,6 +47,7 @@ final class WebAppHandler
             case 'add_favorite':    return self::aAddFavorite($userId, $code);
             case 'remove_favorite': return self::aRemoveFavorite($userId, $code);
             case 'watch_movie':     return self::aWatch($userId, $code);
+            case 'claim_daily':     return self::aClaimDaily($userId);
             default:
                 return ['ok' => false, 'error' => 'unknown_action'];
         }
@@ -169,6 +170,17 @@ final class WebAppHandler
         return ['ok' => true, 'is_favorite' => false];
     }
 
+    /** Kunlik Nano Coin bonusini olish (Web App profilidan). */
+    private static function aClaimDaily(int $userId): array
+    {
+        $r = NanoRepo::claimDaily($userId);
+        if (!empty($r['ok'])) {
+            self::notify($userId, 'daily_claim', "🎁 Kunlik bonus: +{$r['amount']} Nano Coin!");
+            return ['ok' => true, 'claimed' => true, 'amount' => $r['amount'], 'balance' => $r['balance']];
+        }
+        return ['ok' => true, 'claimed' => false, 'wait' => (int)($r['wait'] ?? 0), 'balance' => $r['balance']];
+    }
+
     /**
      * "Ko'rish" — videoni botga (foydalanuvchi chatiga) yuborish.
      * Bildirishnomalar: tanlandi → tayyorlanmoqda → [video] → muvaffaqiyatli + tarix.
@@ -250,11 +262,14 @@ final class WebAppHandler
     private static function profileData(int $userId): array
     {
         return [
-            'id'            => $userId,
-            'bot'           => Telegram::username(),
-            'favorites'     => WebAppRepo::favCount($userId),
-            'history'       => WebAppRepo::historyCount($userId),
-            'history_items' => array_map(
+            'id'              => $userId,
+            'bot'             => Telegram::username(),
+            'favorites'       => WebAppRepo::favCount($userId),
+            'history'         => WebAppRepo::historyCount($userId),
+            'nano_balance'    => NanoRepo::balance($userId),
+            'daily_available' => NanoRepo::dailyAvailable($userId),
+            'daily_wait'      => NanoRepo::nextDailyWait($userId),
+            'history_items'   => array_map(
                 fn($f) => self::dto($f, []),
                 WebAppRepo::history($userId, 20)
             ),

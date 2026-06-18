@@ -9,6 +9,7 @@ final class StartHandler
         $cid = $ctx['cid'];
         StatRepo::inc('starts');
         State::clear($cid);
+        NanoRepo::grantRegisterBonus($cid); // yangi user → ro'yxatdan o'tish bonusi (bir martalik)
 
         if (!ChannelManager::checkSubscription($cid)) {
             return; // obuna so'rovi ko'rsatildi

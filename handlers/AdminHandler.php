@@ -9,7 +9,7 @@ final class AdminHandler
     private const ADMIN_BUTTONS = [
         '➕ Film yuklash', '📺 Serial yuklash', '✏️ Tahrirlash', "🗑 O'chirish",
         '📨 Xabar yuborish', '📊 Statistika', '👥 Foydalanuvchilar', '📢 Kanallar',
-        '🔐 Adminlar', '⚙️ Sozlamalar', '👤 Oddiy rejim',
+        '🔐 Adminlar', '⚙️ Sozlamalar', '🪙 Nano Coin', '👤 Oddiy rejim',
     ];
 
     public static function handle(array $ctx): bool
@@ -75,6 +75,10 @@ final class AdminHandler
                 self::settings($cid);
                 return true;
 
+            case '🪙 Nano Coin':
+                NanoAdmin::showPanel($cid);
+                return true;
+
             case '👤 Oddiy rejim':
                 State::clear($cid);
                 showKeyboard($cid, "👤 Oddiy foydalanuvchi rejimi", Keyboard::main(true));
@@ -100,6 +104,16 @@ final class AdminHandler
             case 'ch_base':
             case 'ch_main':
             case 'ch_req':           return self::channelApply($ctx, $step);
+
+            // Nano Coin admin steplari (NanoAdmin'ga delegatsiya)
+            case 'nano_give_id':
+            case 'nano_give_amount':
+            case 'nano_take_id':
+            case 'nano_take_amount':
+            case 'nano_view_id':
+            case 'nano_set_register':
+            case 'nano_set_daily':
+            case 'nano_set_cost':     return NanoAdmin::step($ctx, $step);
         }
 
         return false; // iste'mol qilinmadi

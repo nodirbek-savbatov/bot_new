@@ -29,6 +29,29 @@ return [
     'state'     => ['timeout' => 600],
     'ratelimit' => ['max' => 20, 'per' => 10],
     'broadcast' => ['batch' => 25, 'sleep_ms' => 40, 'retries' => 3],
+
+    // AI Kino Yordamchisi (Google Gemini)
+    'ai' => [
+        'enabled'  => true,
+        'provider' => 'gemini',
+        'gemini'   => [
+            'api_key' => '',                 // GEMINI_API_KEY
+            'model'   => 'gemini-2.5-flash', // yoki gemini-2.5-pro
+            'api'     => 'https://generativelanguage.googleapis.com',
+        ],
+        'context_messages' => 24,
+        'cache_ttl'        => 86400,
+        'cooldown'         => 3,
+        'max_output'       => 800,
+    ],
+
+    // Nano Coin — AI uchun ichki valyuta
+    'nano' => [
+        'register_bonus' => 100, // REGISTER_BONUS
+        'daily_bonus'    => 10,  // DAILY_BONUS
+        'ai_cost'        => 10,  // AI_REQUEST_COST
+    ],
+
     'log'       => ['level' => 'info', 'days' => 14],
     'debug'     => false,
 ];

@@ -7,12 +7,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---- Foydalanuvchilar ----
 CREATE TABLE IF NOT EXISTS users (
-    id        BIGINT       NOT NULL,
-    name      VARCHAR(128) NOT NULL DEFAULT '',
-    username  VARCHAR(64)  NOT NULL DEFAULT '',
-    joined    DATETIME     NOT NULL,
-    last_seen DATETIME     NOT NULL,
-    blocked   TINYINT(1)   NOT NULL DEFAULT 0,
+    id           BIGINT       NOT NULL,
+    name         VARCHAR(128) NOT NULL DEFAULT '',
+    username     VARCHAR(64)  NOT NULL DEFAULT '',
+    joined       DATETIME     NOT NULL,
+    last_seen    DATETIME     NOT NULL,
+    blocked      TINYINT(1)   NOT NULL DEFAULT 0,
+    nano_balance INT          NOT NULL DEFAULT 0,  -- Nano Coin balansi
+    last_daily   DATETIME     NULL,                -- oxirgi kunlik bonus olingan vaqt
     PRIMARY KEY (id),
     KEY idx_blocked (blocked),
     KEY idx_joined (joined)
@@ -144,6 +146,55 @@ CREATE TABLE IF NOT EXISTS notify_log (
     signature  VARCHAR(160) NOT NULL DEFAULT '',
     updated_at DATETIME     NOT NULL,
     PRIMARY KEY (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================================
+-- AI Kino Yordamchisi + Nano Coin tizimi (additive — eski jadvallarga tegmaydi)
+-- =====================================================================
+
+-- ---- Nano Coin tranzaksiyalari (audit jurnali; double-spend himoyasi) ----
+CREATE TABLE IF NOT EXISTS nano_transactions (
+    id            BIGINT       NOT NULL AUTO_INCREMENT,
+    user_id       BIGINT       NOT NULL,
+    amount        INT          NOT NULL,                 -- +kredit / -debet
+    balance_after INT          NOT NULL,                 -- harakatdan keyingi balans
+    reason        VARCHAR(32)  NOT NULL,                 -- register, daily, ai_request, refund, admin_add, admin_sub
+    note          VARCHAR(255) NOT NULL DEFAULT '',
+    created_at    DATETIME     NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_user (user_id, id),
+    KEY idx_reason (reason),
+    KEY idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---- AI suhbat sessiyasi (rejim faol/yo'q) ----
+CREATE TABLE IF NOT EXISTS ai_sessions (
+    user_id    BIGINT     NOT NULL,
+    active     TINYINT(1) NOT NULL DEFAULT 0,
+    started_at DATETIME   NULL,
+    updated_at DATETIME   NOT NULL,
+    PRIMARY KEY (user_id),
+    KEY idx_active (active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---- AI suhbat xotirasi (kontekst — oxirgi N xabar) ----
+CREATE TABLE IF NOT EXISTS ai_messages (
+    id         BIGINT NOT NULL AUTO_INCREMENT,
+    user_id    BIGINT NOT NULL,
+    role       ENUM('user','model') NOT NULL,
+    content    TEXT   NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_user (user_id, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---- AI javob keshi (bir xil savol qayta yuborilsa API chaqirilmaydi) ----
+CREATE TABLE IF NOT EXISTS ai_cache (
+    cache_key  CHAR(64)   NOT NULL,   -- sha256(model | savol | baza imzosi | kontekst)
+    response   MEDIUMTEXT NOT NULL,
+    created_at DATETIME   NOT NULL,
+    PRIMARY KEY (cache_key),
+    KEY idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

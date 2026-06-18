@@ -41,6 +41,11 @@ final class CallbackHandler
                 }
                 return;
 
+            // ---- Kunlik bonus (profildan, har bir foydalanuvchi uchun) ----
+            case 'nano_daily':
+                ProfileHandler::claim($chatId, $msgId);
+                return;
+
             // ---- Reaktsiya ----
             case 'like':
             case 'dislike':
@@ -163,6 +168,19 @@ final class CallbackHandler
                     ChannelRepo::remove((int)$a1);
                     ChannelManager::refreshPanel($chatId, $msgId);
                 }
+                return;
+
+            // ---- Nano Coin admin paneli ----
+            case 'nano_panel':
+            case 'nano_give':
+            case 'nano_take':
+            case 'nano_view':
+            case 'nano_top':
+            case 'nano_txns':
+            case 'nano_cfg_reg':
+            case 'nano_cfg_daily':
+            case 'nano_cfg_cost':
+                if ($isAdmin) NanoAdmin::callback($chatId, $msgId, $action, $a1);
                 return;
         }
     }

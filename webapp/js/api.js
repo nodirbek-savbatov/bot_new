@@ -40,6 +40,7 @@
         profile:     ()        => call('open_profile'),
         watch:       (code)    => call('watch_movie', { movie_id: code }),
         addFavorite:    (code) => call('add_favorite', { movie_id: code }),
-        removeFavorite: (code) => call('remove_favorite', { movie_id: code })
+        removeFavorite: (code) => call('remove_favorite', { movie_id: code }),
+        claimDaily:     ()     => call('claim_daily')
     };
 })();

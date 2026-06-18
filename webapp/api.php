@@ -52,6 +52,7 @@ UserRepo::touch(
     trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
     (string)($user['username'] ?? '')
 );
+NanoRepo::grantRegisterBonus($userId); // yangi user → ro'yxatdan o'tish bonusi (bir martalik)
 
 if (UserRepo::isBlocked($userId) && !AdminRepo::isAdmin($userId)) {
     api_out(['ok' => false, 'error' => 'blocked'], 403);

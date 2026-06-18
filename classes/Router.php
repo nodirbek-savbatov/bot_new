@@ -57,6 +57,12 @@ final class Router
 
         $text = trim($ctx['text']);
 
+        // AI rejimi (faqat AI session aktiv / "🤖 AI Yordamchi" tugmasi uchun).
+        // intercept() false qaytarsa — eski oqim hech o'zgarmasdan davom etadi.
+        if (AiHandler::intercept($ctx)) {
+            return;
+        }
+
         // Global bekor qilish
         if ($text === '/bekor' || $text === '/cancel') {
             State::clear($cid);

@@ -52,6 +52,31 @@ try {
     exit(1);
 }
 
+// ---- 2.1) Migratsiya: eski bazaga Nano ustunlarini qo'shish (idempotent) ----
+try {
+    $colMissing = static function (string $table, string $col): bool {
+        return (int)Database::value(
+            "SELECT COUNT(*) FROM information_schema.columns
+             WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
+            [$table, $col]
+        ) === 0;
+    };
+    $migrations = [
+        ['users', 'nano_balance', "ALTER TABLE users ADD COLUMN nano_balance INT NOT NULL DEFAULT 0"],
+        ['users', 'last_daily',   "ALTER TABLE users ADD COLUMN last_daily DATETIME NULL"],
+    ];
+    $applied = 0;
+    foreach ($migrations as [$table, $col, $ddl]) {
+        if ($colMissing($table, $col)) {
+            Database::pdo()->exec($ddl);
+            $applied++;
+        }
+    }
+    $out($applied > 0 ? "✅ Migratsiya: $applied ta ustun qo'shildi (users)" : '✅ Migratsiya: ustunlar mavjud');
+} catch (\Throwable $e) {
+    $out('⚠️ Migratsiya xatosi: ' . $e->getMessage());
+}
+
 // ---- 3) Bosh admin ----
 $mainAdmin = (int)Config::get('admin.main');
 if ($mainAdmin > 0) {
