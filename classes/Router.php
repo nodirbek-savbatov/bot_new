@@ -63,6 +63,11 @@ final class Router
             return;
         }
 
+        // "Adminga xabar" rejimi (faqat shu rejim faol / "📨 Adminga xabar" tugmasi uchun).
+        if (ContactHandler::intercept($ctx)) {
+            return;
+        }
+
         // Global bekor qilish
         if ($text === '/bekor' || $text === '/cancel') {
             State::clear($cid);

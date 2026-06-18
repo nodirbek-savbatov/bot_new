@@ -101,6 +101,7 @@ final class AdminHandler
             case 'broadcast_all':    return self::broadcastAll($ctx);
             case 'broadcast_one':    return self::broadcastOne($ctx);
             case 'broadcast_one_msg':return self::broadcastOneMsg($ctx);
+            case 'contact_reply':    return self::contactReply($ctx);
             case 'ch_base':
             case 'ch_main':
             case 'ch_req':           return self::channelApply($ctx, $step);
@@ -374,6 +375,29 @@ final class AdminHandler
         $res = $target ? Telegram::copy($target, $cid, $ctx['mid']) : null;
         $ok = is_array($res) && ($res['ok'] ?? false);
         showMenu($cid, $ok ? "✅ Xabar yuborildi." : "❌ Yuborib bo'lmadi (foydalanuvchi botni bloklagan bo'lishi mumkin).");
+        return true;
+    }
+
+    // ================= ADMINGA XABARGA JAVOB =================
+
+    /** "✍️ Javob berish" tugmasidan keyin — admin javobini foydalanuvchiga yuboradi. */
+    private static function contactReply(array $ctx): bool
+    {
+        $cid    = $ctx['cid'];
+        $d      = State::data($cid);
+        $target = (int)($d['reply_target'] ?? 0);
+        State::clear($cid);
+
+        if ($target === 0) {
+            showMenu($cid, "❌ Foydalanuvchi aniqlanmadi. Qaytadan urinib ko'ring.");
+            return true;
+        }
+
+        $ok = ContactHandler::replyToUser($target, $ctx);
+        showMenu($cid, $ok
+            ? "✅ Javob yuborildi: <code>$target</code>"
+            : "❌ Yuborib bo'lmadi (foydalanuvchi botni bloklagan bo'lishi mumkin)."
+        );
         return true;
     }
 

@@ -510,7 +510,7 @@ toast (Web App) va bildirishnoma (bot) birga ishlaydi, ma'lumot bir bazada.
 ## 🚀 Deploy (Oracle VPS)
 
 1. MySQL DB va foydalanuvchi yarating, `config/config.php` ni to'ldiring.
-2. O'rnatish: `php database/install.php https://SIZNING-DOMEN/bot.php`
+2. O'rnatish: `php database/install.php https://bot.nodirbek-savbatov.site/bot.php`
 3. Botni baza/asosiy/majburiy kanallarga **admin** qiling, panel orqali sozlang.
 4. Cron qatorlari (`crontab -e`):
    ```

@@ -26,6 +26,7 @@ final class Keyboard
             [['text' => '🆕 Yangi filmlar'], ['text' => '⭐ Top filmlar']],
             [['text' => '📋 Barcha kinolar'], ['text' => '📞 Yordam']],
             [['text' => '🤖 AI Yordamchi'],  ['text' => '👤 Profil']],
+            [['text' => '📨 Adminga xabar']],
         ];
 
         // Web App tugmasi (reply-keyboard web_app — sendData() shu yo'l orqali ishlaydi).
@@ -138,6 +139,28 @@ final class Keyboard
             'is_persistent'   => true,
             'keyboard'        => [[['text' => '❌ AI Rejimidan Chiqish']]],
         ]);
+    }
+
+    /** AI bazada kino topa olmaganda — javob tagiga "admindan so'rash" inline tugmasi. */
+    public static function askAdmin(): array
+    {
+        return [[['text' => "📨 Admindan kinoni so'rash", 'callback_data' => 'ask_admin']]];
+    }
+
+    /** "Adminga xabar" rejimi reply-keyboardi — faqat chiqish tugmasi. */
+    public static function contact(): string
+    {
+        return json_encode([
+            'resize_keyboard' => true,
+            'is_persistent'   => true,
+            'keyboard'        => [[['text' => '❌ Adminga xabar rejimidan chiqish']]],
+        ]);
+    }
+
+    /** Adminga keladigan foydalanuvchi xabari tagidagi "javob berish" inline tugmasi. */
+    public static function adminReply(int $userId): array
+    {
+        return [[['text' => '✍️ Javob berish', 'callback_data' => "reply:$userId"]]];
     }
 
     /** Profil inline tugmalari: kunlik bonus (agar mavjud) + Web App. */

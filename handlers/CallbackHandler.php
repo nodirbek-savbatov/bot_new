@@ -46,6 +46,26 @@ final class CallbackHandler
                 ProfileHandler::claim($chatId, $msgId);
                 return;
 
+            // ---- AI bazada topa olmadi → adminga xabar rejimiga o'tish ----
+            case 'ask_admin':
+                AiRepo::stop($chatId);
+                AiRepo::clearMessages($chatId);
+                Telegram::editMarkup($chatId, $msgId, []); // tugmani olib tashlaymiz
+                ContactHandler::enter($chatId);
+                return;
+
+            // ---- Admin: foydalanuvchiga javob berish ----
+            case 'reply':
+                if ($isAdmin) {
+                    $target = (int)$a1;
+                    State::set($chatId, 'contact_reply', ['reply_target' => $target]);
+                    showMenu($chatId,
+                        "✍️ <code>$target</code> ga javobingizni yuboring (matn/rasm/video):",
+                        Keyboard::cancel()
+                    );
+                }
+                return;
+
             // ---- Reaktsiya ----
             case 'like':
             case 'dislike':

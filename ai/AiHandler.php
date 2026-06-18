@@ -146,7 +146,14 @@ final class AiHandler
         AiRepo::addMessage($cid, 'model', (string)$res['text']);
 
         $balance = NanoRepo::balance($cid);
-        Telegram::send($cid, self::format((string)$res['text']) . "\n\n🪙 Qoldiq: <b>$balance</b>");
+
+        // Bazada mos kino topilmagan bo'lsa — javob tagiga "Admindan so'rash" tugmasi.
+        $opts = [];
+        if ((int)($res['dbCount'] ?? 0) === 0) {
+            $opts['reply_markup'] = json_encode(['inline_keyboard' => Keyboard::askAdmin()]);
+        }
+
+        Telegram::send($cid, self::format((string)$res['text']) . "\n\n🪙 Qoldiq: <b>$balance</b>", $opts);
     }
 
     /**

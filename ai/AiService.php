@@ -12,7 +12,7 @@ final class AiService
 {
     /**
      * @param array $history [['role'=>'user'|'model','content'=>string], ...] (joriy savoldan oldingi)
-     * @return array{ok:bool, text:string, cached?:bool, error?:string}
+     * @return array{ok:bool, text:string, cached?:bool, error?:string, dbCount?:int}
      */
     public static function ask(int $uid, string $message, array $history): array
     {
@@ -40,9 +40,12 @@ final class AiService
             $ctxDigest,
         ]));
 
+        // Bazada nechta moslik topildi (AiHandler "admindan so'rash" tugmasini shu asosda ko'rsatadi).
+        $dbCount = count($dbFilms);
+
         $cached = AiRepo::cacheGet($key, $ttl);
         if ($cached !== null) {
-            return ['ok' => true, 'text' => $cached, 'cached' => true];
+            return ['ok' => true, 'text' => $cached, 'cached' => true, 'dbCount' => $dbCount];
         }
 
         // Tarix + joriy savol.
@@ -51,12 +54,12 @@ final class AiService
 
         $res = GeminiClient::generate($contents, $system);
         if (!($res['ok'] ?? false)) {
-            return ['ok' => false, 'error' => (string)($res['error'] ?? 'unknown'), 'text' => ''];
+            return ['ok' => false, 'error' => (string)($res['error'] ?? 'unknown'), 'text' => '', 'dbCount' => $dbCount];
         }
 
         $text = (string)$res['text'];
         AiRepo::cacheSet($key, $text);
 
-        return ['ok' => true, 'text' => $text, 'cached' => false];
+        return ['ok' => true, 'text' => $text, 'cached' => false, 'dbCount' => $dbCount];
     }
 }

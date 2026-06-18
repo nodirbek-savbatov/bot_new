@@ -54,7 +54,7 @@ foreach (['GeminiClient', 'AiPrompt', 'AiService', 'AiHandler'] as $ai) {
     require BASE_PATH . "/ai/$ai.php";
 }
 
-foreach (['StartHandler', 'MessageHandler', 'AdminHandler', 'CallbackHandler', 'WebAppHandler', 'ProfileHandler'] as $h) {
+foreach (['StartHandler', 'MessageHandler', 'AdminHandler', 'CallbackHandler', 'WebAppHandler', 'ProfileHandler', 'ContactHandler'] as $h) {
     require BASE_PATH . "/handlers/$h.php";
 }
 
