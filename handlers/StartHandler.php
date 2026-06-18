@@ -19,10 +19,10 @@ final class StartHandler
         $param = $parts[1] ?? '';
         $isAdmin = AdminRepo::isAdmin($cid);
 
-        // Deep-link: /start <kod>
+        // Deep-link: /start <kod> (kino → darhol; serial → fasl/qism navigatsiyasi)
         if (is_digits($param)) {
             deletePrevMenu($cid);
-            if (!deliverFilm($cid, (int)$param)) {
+            if (!openByCode($cid, (int)$param)) {
                 Telegram::send($cid, "❌ Film topilmadi. Kod: <code>" . e($param) . "</code>");
             }
             self::sendKeyboard($cid, $isAdmin);

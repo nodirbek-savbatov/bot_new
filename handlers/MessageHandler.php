@@ -78,12 +78,12 @@ final class MessageHandler
             return;
         }
 
-        // To'g'ridan-to'g'ri kod
+        // To'g'ridan-to'g'ri kod (kino → darhol; serial → fasl/qism navigatsiyasi)
         if (is_digits($text)) {
             if (!ChannelManager::checkSubscription($cid)) return;
             StatRepo::inc('searches');
             deletePrevMenu($cid);
-            if (!deliverFilm($cid, (int)$text)) {
+            if (!openByCode($cid, (int)$text)) {
                 showMenu($cid, "❌ Kod <code>" . e($text) . "</code> topilmadi.\n\n🔍 Nom bilan qidirib ko'ring.");
             }
             return;
@@ -134,10 +134,17 @@ final class MessageHandler
             showMenu($cid, "📭 Hozircha film yo'q.");
             return;
         }
-        $kb = [];
+        $kb         = [];
+        $seenSeries = [];
         foreach ($top as $f) {
-            $icon = $f['type'] === 'serial' ? '📺' : '🎬';
-            $kb[] = [['text' => "👁 {$f['views']} | $icon {$f['title']}", 'callback_data' => "watch:{$f['code']}"]];
+            if ($f['type'] === 'serial' && !empty($f['series_id'])) {
+                $sid = (int)$f['series_id'];
+                if (isset($seenSeries[$sid])) continue; // serial — bitta tugma
+                $seenSeries[$sid] = true;
+                $kb[] = [['text' => "👁 {$f['views']} | 📺 {$f['title']}", 'callback_data' => "srl:$sid"]];
+            } else {
+                $kb[] = [['text' => "👁 {$f['views']} | 🎬 {$f['title']}", 'callback_data' => "watch:{$f['code']}"]];
+            }
         }
         showMenu($cid, "⭐ <b>Top 10:</b>", $kb);
     }
@@ -223,10 +230,10 @@ final class MessageHandler
 
         StatRepo::inc('searches');
 
-        // To'g'ridan-to'g'ri kod kiritilgan bo'lsa — filmni yetkazamiz.
+        // To'g'ridan-to'g'ri kod kiritilgan bo'lsa — kino yetkaziladi / serial navigatsiyasi ochiladi.
         if (is_digits($q)) {
             deletePrevMenu($cid);
-            if (!deliverFilm($cid, (int)$q)) {
+            if (!openByCode($cid, (int)$q)) {
                 showMenu($cid, "❌ Hech narsa topilmadi.\n\nBoshqa nom bilan urinib ko'ring.");
             }
             return;
@@ -238,17 +245,28 @@ final class MessageHandler
             showMenu($cid, "❌ Hech narsa topilmadi.\n\nBoshqa nom bilan urinib ko'ring.");
             return;
         }
-        $kb = self::filmButtons($results, true);
+        $kb = self::filmButtons($results);
         showMenu($cid, "🔎 <b>\"" . e($q) . "\"</b> — " . count($results) . " ta natija topildi:", $kb);
     }
 
-    /** Film tugmalari massivi. */
-    private static function filmButtons(array $films, bool $withIcon = false): array
+    /**
+     * Film tugmalari massivi (kino va serial AJRATILGAN):
+     *  - kino  → "watch:CODE" (darhol yetkaziladi);
+     *  - serial → bitta tugma "srl:SERIES_ID" (fasl/qism navigatsiyasi); qismlar guruhlanadi.
+     */
+    private static function filmButtons(array $films): array
     {
-        $kb = [];
+        $kb         = [];
+        $seenSeries = [];
         foreach ($films as $f) {
-            $icon = $withIcon ? (($f['type'] === 'serial' ? '📺 ' : '🎬 ')) : '🎬 ';
-            $kb[] = [['text' => $icon . $f['title'] . " (#{$f['code']})", 'callback_data' => "watch:{$f['code']}"]];
+            if ($f['type'] === 'serial' && !empty($f['series_id'])) {
+                $sid = (int)$f['series_id'];
+                if (isset($seenSeries[$sid])) continue; // bitta serial — bitta tugma
+                $seenSeries[$sid] = true;
+                $kb[] = [['text' => "📺 " . $f['title'], 'callback_data' => "srl:$sid"]];
+            } else {
+                $kb[] = [['text' => "🎬 " . $f['title'] . " (#{$f['code']})", 'callback_data' => "watch:{$f['code']}"]];
+            }
         }
         return $kb;
     }

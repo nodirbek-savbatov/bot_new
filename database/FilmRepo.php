@@ -163,6 +163,64 @@ final class FilmRepo
         return (string)Database::value("SELECT title FROM series WHERE id = ?", [$seriesId]);
     }
 
+    /** Serialni id bo'yicha olish (navigatsiya / yuklash uchun). */
+    public static function seriesById(int $seriesId): ?array
+    {
+        return Database::fetch("SELECT id, title FROM series WHERE id = ?", [$seriesId]);
+    }
+
+    /**
+     * Serial nomini fuzzy qidiradi (faqat qismi bor seriallar).
+     * searchFuzzy bilan bir xil relevance mantig'i, lekin `series` jadvali bo'yicha guruhlangan.
+     * @return array<array{id:int,title:string,episodes:int}>
+     */
+    public static function searchSeries(string $q, int $limit = 30): array
+    {
+        $q = trim(preg_replace('/\s+/u', ' ', $q));
+        if ($q === '') return [];
+        $limit = max(1, min($limit, 50));
+
+        $words = array_values(array_filter(
+            explode(' ', mb_strtolower($q, 'UTF-8')),
+            static fn($w) => mb_strlen($w, 'UTF-8') >= 2
+        ));
+        if (!$words) $words = [mb_strtolower($q, 'UTF-8')];
+
+        $esc = static fn(string $s): string =>
+            str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $s);
+
+        $ql    = mb_strtolower($q, 'UTF-8');
+        $whole = '%' . $esc($ql) . '%';
+
+        $score = ["(CASE WHEN LOWER(s.title) = ?    THEN 1000 ELSE 0 END)",
+                  "(CASE WHEN LOWER(s.title) LIKE ? THEN 500  ELSE 0 END)",
+                  "(CASE WHEN LOWER(s.title) LIKE ? THEN 300  ELSE 0 END)"];
+        $scoreParams = [$ql, $esc($ql) . '%', $whole];
+
+        $conds       = [];
+        $whereParams = [];
+        foreach ($words as $w) {
+            $like          = '%' . $esc($w) . '%';
+            $score[]       = "(CASE WHEN LOWER(s.title) LIKE ? THEN 50 ELSE 0 END)";
+            $scoreParams[] = $like;
+            $conds[]       = "LOWER(s.title) LIKE ?";
+            $whereParams[] = $like;
+        }
+
+        $scoreSql = implode(' + ', $score);
+        $where    = implode(' OR ', $conds);
+
+        $sql = "SELECT s.id, s.title, COUNT(f.code) AS episodes, ($scoreSql) AS relevance
+                FROM series s
+                JOIN films f ON f.series_id = s.id AND f.type = 'serial'
+                WHERE $where
+                GROUP BY s.id, s.title
+                ORDER BY relevance DESC, s.title ASC
+                LIMIT $limit";
+
+        return Database::fetchAll($sql, array_merge($scoreParams, $whereParams));
+    }
+
     /** Serialdagi fasllar: [['season','cnt'], ...]. */
     public static function seasons(int $seriesId): array
     {

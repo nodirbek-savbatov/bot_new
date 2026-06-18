@@ -121,6 +121,56 @@ function mainTarget(): int|string|null
 }
 
 /**
+ * Kodni "ochadi" (kino va serialni ajratadi):
+ *   - serial qismi bo'lsa → fasl/qism navigatsiyasini ko'rsatadi (darhol yetkazmaydi);
+ *   - oddiy kino bo'lsa   → darhol yetkazadi (deliverFilm).
+ * To'g'ridan-to'g'ri kod, qidiruv, deep-link va "watch" tugmasi shu yerdan o'tadi.
+ */
+function openByCode(int $chatId, int $code): bool
+{
+    $film = FilmRepo::get($code);
+    if (!$film) return false;
+
+    if ($film['type'] === 'serial' && !empty($film['series_id'])) {
+        openSeriesNav($chatId, (int)$film['series_id']);
+        return true;
+    }
+    return deliverFilm($chatId, $code);
+}
+
+/**
+ * Serial navigatsiyasini YANGI xabar sifatida ochadi.
+ * Bir nechta fasl bo'lsa — faslni tanlashni so'raydi; bitta fasl bo'lsa — to'g'ridan qismlar (paginatsiya).
+ */
+function openSeriesNav(int $chatId, int $seriesId): void
+{
+    $series = FilmRepo::seriesById($seriesId);
+    if (!$series) {
+        showMenu($chatId, "❌ Serial topilmadi.");
+        return;
+    }
+    $seasons = FilmRepo::seasons($seriesId);
+    if (!$seasons) {
+        showMenu($chatId, "📭 Bu serialda hali qism yo'q.");
+        return;
+    }
+    $title = e((string)$series['title']);
+
+    // Bitta fasl — to'g'ridan-to'g'ri qismlar ro'yxati.
+    if (count($seasons) === 1) {
+        $season = (int)$seasons[0]['season'];
+        $eps    = FilmRepo::episodes($seriesId, $season);
+        showMenu($chatId,
+            "📺 <b>$title</b>\n{$season}-fasl — qismni tanlang:",
+            Keyboard::episodesPage($seriesId, $season, $eps, 1)
+        );
+        return;
+    }
+
+    showMenu($chatId, "📺 <b>$title</b>\n\nQaysi faslni ko'rasiz?", Keyboard::seasons($seriesId, $seasons));
+}
+
+/**
  * Filmni foydalanuvchiga yetkazadi (baza kanaldan copyMessage).
  * Video o'chirilmaydi; ko'rish hisoblanadi.
  */

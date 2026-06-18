@@ -37,8 +37,13 @@ final class AdminHandler
                 return true;
 
             case '📺 Serial yuklash':
-                State::set($cid, 'serial_title', ['type' => 'serial']);
-                showMenu($cid, "📺 <b>Serial yuklash</b>\n\nSerial nomini yuboring:", Keyboard::cancel());
+                State::set($cid, 'serial_choose');
+                showMenu($cid,
+                    "📺 <b>Serial yuklash</b>\n\nBu serial avval yuklanganmi?\n" .
+                    "• <b>Ha</b> — mavjud serialga yangi qism qo'shasiz\n" .
+                    "• <b>Yo'q</b> — yangi serial yaratasiz",
+                    Keyboard::serialExists()
+                );
                 return true;
 
             case '✏️ Tahrirlash':
@@ -89,6 +94,8 @@ final class AdminHandler
         switch ($step) {
             case 'film_title':       return self::filmTitle($ctx);
             case 'film_desc':        return self::filmDesc($ctx);
+            case 'serial_choose':    return self::serialChoose($ctx);
+            case 'serial_pick':      return self::serialPickInput($ctx);
             case 'serial_title':     return self::serialTitle($ctx);
             case 'serial_season':    return self::serialSeason($ctx);
             case 'serial_episode':   return self::serialEpisode($ctx);
@@ -173,6 +180,79 @@ final class AdminHandler
     }
 
     // ================= SERIAL =================
+
+    /** 'serial_choose' stepida matn kelsa — Ha/Yo'q tugmalarini qayta ko'rsatamiz. */
+    private static function serialChoose(array $ctx): bool
+    {
+        showMenu($ctx['cid'],
+            "📺 Iltimos, <b>Ha</b> yoki <b>Yo'q</b> tugmasini bosing:",
+            Keyboard::serialExists()
+        );
+        return true;
+    }
+
+    /** 'serial_pick' stepi — mavjud serialni nom yoki qism kodi orqali topadi. */
+    private static function serialPickInput(array $ctx): bool
+    {
+        $cid  = $ctx['cid'];
+        $text = trim($ctx['text']);
+        if ($text === '') {
+            showMenu($cid, "❌ Serial nomini yoki qism kodini yuboring.", Keyboard::cancel());
+            return true;
+        }
+
+        // Raqam → qism kodi orqali serialni aniqlaymiz.
+        if (is_digits($text)) {
+            $film = FilmRepo::get((int)$text);
+            if ($film && $film['type'] === 'serial' && !empty($film['series_id'])) {
+                self::enterExistingSeries($cid, (int)$film['series_id']);
+                return true;
+            }
+            showMenu($cid, "❌ Bu kod serial qismiga tegishli emas.\nNom bilan qidirib ko'ring yoki /bekor.", Keyboard::cancel());
+            return true;
+        }
+
+        // Nom → fuzzy qidiruv → tanlash tugmalari.
+        $rows = FilmRepo::searchSeries($text, 30);
+        if (!$rows) {
+            showMenu($cid,
+                "❌ <b>\"" . e($text) . "\"</b> bo'yicha serial topilmadi.\n" .
+                "Boshqa nom bilan urinib ko'ring yoki /bekor.",
+                Keyboard::cancel()
+            );
+            return true;
+        }
+        showMenu($cid, "🔎 Topilgan seriallar — qaysisiga qism qo'shamiz?", Keyboard::seriesPick($rows));
+        return true;
+    }
+
+    /** Mavjud serial tanlandi (inline 'srpick:ID') — fasl so'rashga o'tamiz. */
+    public static function serialPick(int $cid, int $msgId, int $seriesId): void
+    {
+        $series = FilmRepo::seriesById($seriesId);
+        if (!$series) {
+            Telegram::editText($cid, $msgId, "❌ Serial topilmadi. Qaytadan urinib ko'ring.");
+            State::setMenu($cid, $msgId);
+            return;
+        }
+        State::set($cid, 'serial_season', ['type' => 'serial', 'title' => $series['title'], 'series_id' => $seriesId]);
+        Telegram::editText($cid, $msgId,
+            "✅ Serial: <b>" . e((string)$series['title']) . "</b>\n\n<b>Fasl</b> raqamini kiriting:", [
+            'reply_markup' => json_encode(['inline_keyboard' => Keyboard::cancel()]),
+        ]);
+        State::setMenu($cid, $msgId);
+    }
+
+    /** Mavjud serialga qism qo'shish: nomni oldindan to'ldirib fasl so'rashga o'tamiz (yangi xabar). */
+    private static function enterExistingSeries(int $cid, int $seriesId): void
+    {
+        $series = FilmRepo::seriesById($seriesId);
+        State::set($cid, 'serial_season', ['type' => 'serial', 'title' => $series['title'], 'series_id' => $seriesId]);
+        showMenu($cid,
+            "✅ Serial: <b>" . e((string)$series['title']) . "</b>\n\n<b>Fasl</b> raqamini kiriting:",
+            Keyboard::cancel()
+        );
+    }
 
     private static function serialTitle(array $ctx): bool
     {

@@ -118,6 +118,78 @@ final class Keyboard
         ];
     }
 
+    // ================= SERIAL NAVIGATSIYASI =================
+
+    /** Serial yuklash: "avval mavjudmi?" — Ha / Yo'q. */
+    public static function serialExists(): array
+    {
+        return [
+            [
+                ['text' => '✅ Ha (mavjud serial)', 'callback_data' => 'srexist'],
+                ['text' => "🆕 Yo'q (yangi)",       'callback_data' => 'srnew'],
+            ],
+            [['text' => '❌ Bekor qilish', 'callback_data' => 'cancel']],
+        ];
+    }
+
+    /** Yuklashda mos seriallar ro'yxati — qaysisiga qism qo'shilishini tanlash. */
+    public static function seriesPick(array $rows): array
+    {
+        $kb = [];
+        foreach ($rows as $r) {
+            $cnt = (int)($r['episodes'] ?? 0);
+            $kb[] = [[
+                'text'          => "📺 {$r['title']} ($cnt qism)",
+                'callback_data' => "srpick:{$r['id']}",
+            ]];
+        }
+        return $kb;
+    }
+
+    /** Serialning fasllari (har qatorda 3 ta). */
+    public static function seasons(int $seriesId, array $seasons): array
+    {
+        $kb  = [];
+        $row = [];
+        foreach ($seasons as $s) {
+            $row[] = ['text' => "📺 {$s['season']}-fasl", 'callback_data' => "ssn:$seriesId:{$s['season']}"];
+            if (count($row) === 3) { $kb[] = $row; $row = []; }
+        }
+        if ($row) $kb[] = $row;
+        return $kb;
+    }
+
+    /**
+     * Bir faslning qismlari — paginatsiya bilan, har qatorda 4 ta.
+     * Qismlar slice shu yerda bajariladi (to'liq ro'yxat beriladi).
+     */
+    public static function episodesPage(int $seriesId, int $season, array $allEps, int $page, int $perPage = 16): array
+    {
+        $total = count($allEps);
+        $pages = max(1, (int)ceil($total / $perPage));
+        $page  = max(1, min($page, $pages));
+        $slice = array_slice($allEps, ($page - 1) * $perPage, $perPage);
+
+        $kb  = [];
+        $row = [];
+        foreach ($slice as $ep) {
+            $row[] = ['text' => "▶️ {$ep['episode']}-qism", 'callback_data' => "ep:{$ep['code']}"];
+            if (count($row) === 4) { $kb[] = $row; $row = []; }
+        }
+        if ($row) $kb[] = $row;
+
+        if ($pages > 1) {
+            $nav = [];
+            if ($page > 1)      $nav[] = ['text' => '⬅️', 'callback_data' => "eps:$seriesId:$season:" . ($page - 1)];
+            $nav[] = ['text' => "$page/$pages", 'callback_data' => 'noop'];
+            if ($page < $pages) $nav[] = ['text' => '➡️', 'callback_data' => "eps:$seriesId:$season:" . ($page + 1)];
+            $kb[] = $nav;
+        }
+
+        $kb[] = [['text' => '🔙 Fasllar', 'callback_data' => "srl:$seriesId"]];
+        return $kb;
+    }
+
     /** Sahifalash navigatsiyasi (prefix:page formatida). Bitta sahifada bo'sh. */
     public static function nav(int $page, int $pages, string $prefix): array
     {

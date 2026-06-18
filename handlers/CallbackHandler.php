@@ -20,6 +20,7 @@ final class CallbackHandler
         $action = $parts[0];
         $a1     = $parts[1] ?? null;
         $a2     = $parts[2] ?? null;
+        $a3     = $parts[3] ?? null;
 
         $isAdmin = AdminRepo::isAdmin($fromId);
         $isMain  = AdminRepo::isMain($fromId);
@@ -75,19 +76,55 @@ final class CallbackHandler
                 }
                 return;
 
-            // ---- Film/qism ko'rish (menyu qoladi) ----
+            // ---- Kino ko'rish (kino → darhol; serial → fasl/qism navigatsiyasi) ----
             case 'watch':
+                openByCode($chatId, (int)$a1);
+                return;
+
+            // ---- Aniq serial qismini ko'rish (menyu qoladi) ----
             case 'ep':
                 deliverFilm($chatId, (int)$a1);
                 return;
 
-            // ---- Serial navigatsiyasi ----
+            // ---- Serial navigatsiyasi: fasllar ----
             case 'srl':
                 self::seasons($chatId, $msgId, (int)$a1);
                 return;
 
+            // ---- Fasl tanlandi → qismlar (1-bet) ----
             case 'ssn':
-                self::episodes($chatId, $msgId, (int)$a1, (int)$a2);
+                self::episodes($chatId, $msgId, (int)$a1, (int)$a2, 1);
+                return;
+
+            // ---- Qism ro'yxati paginatsiyasi ----
+            case 'eps':
+                self::episodes($chatId, $msgId, (int)$a1, (int)$a2, max(1, (int)$a3));
+                return;
+
+            // ---- Serial yuklash: yangi / mavjud (admin) ----
+            case 'srnew':
+                if ($isAdmin) {
+                    State::set($chatId, 'serial_title', ['type' => 'serial']);
+                    Telegram::editText($chatId, $msgId, "📺 <b>Yangi serial</b>\n\nSerial nomini yuboring:", [
+                        'reply_markup' => json_encode(['inline_keyboard' => Keyboard::cancel()]),
+                    ]);
+                    State::setMenu($chatId, $msgId);
+                }
+                return;
+
+            case 'srexist':
+                if ($isAdmin) {
+                    State::set($chatId, 'serial_pick');
+                    Telegram::editText($chatId, $msgId,
+                        "📺 <b>Mavjud serial</b>\n\nSerial <b>nomini</b> (yoki qism <b>kodini</b>) yuboring:", [
+                        'reply_markup' => json_encode(['inline_keyboard' => Keyboard::cancel()]),
+                    ]);
+                    State::setMenu($chatId, $msgId);
+                }
+                return;
+
+            case 'srpick':
+                if ($isAdmin) AdminHandler::serialPick($chatId, $msgId, (int)$a1);
                 return;
 
             // ---- Yangi filmlar paginatsiya ----
@@ -207,26 +244,37 @@ final class CallbackHandler
 
     // ---- Yordamchilar ----
 
+    /** Fasllarni ko'rsatadi (1 ta fasl bo'lsa — to'g'ridan qismlarga o'tadi). */
     private static function seasons(int $chatId, int $msgId, int $seriesId): void
     {
+        $series  = FilmRepo::seriesById($seriesId);
         $seasons = FilmRepo::seasons($seriesId);
-        if (!$seasons) return;
-        $kb = [];
-        foreach ($seasons as $s) {
-            $kb[] = [['text' => "📺 {$s['season']}-fasl ({$s['cnt']} qism)", 'callback_data' => "ssn:$seriesId:{$s['season']}"]];
+        if (!$series || !$seasons) return;
+
+        if (count($seasons) === 1) {
+            self::episodes($chatId, $msgId, $seriesId, (int)$seasons[0]['season'], 1);
+            return;
         }
-        Telegram::editMarkup($chatId, $msgId, $kb);
+
+        $title = e((string)$series['title']);
+        Telegram::editText($chatId, $msgId, "📺 <b>$title</b>\n\nQaysi faslni ko'rasiz?", [
+            'reply_markup' => json_encode(['inline_keyboard' => Keyboard::seasons($seriesId, $seasons)]),
+        ]);
+        State::setMenu($chatId, $msgId);
     }
 
-    private static function episodes(int $chatId, int $msgId, int $seriesId, int $season): void
+    /** Faslning qismlarini paginatsiya bilan ko'rsatadi (har qatorda 4 ta). */
+    private static function episodes(int $chatId, int $msgId, int $seriesId, int $season, int $page = 1): void
     {
         $eps = FilmRepo::episodes($seriesId, $season);
-        $kb = [];
-        foreach ($eps as $ep) {
-            $kb[] = [['text' => "▶️ {$ep['episode']}-qism", 'callback_data' => "ep:{$ep['code']}"]];
-        }
-        $kb[] = [['text' => '🔙 Orqaga', 'callback_data' => "srl:$seriesId"]];
-        Telegram::editMarkup($chatId, $msgId, $kb);
+        if (!$eps) return;
+        $series = FilmRepo::seriesById($seriesId);
+        $title  = $series ? e((string)$series['title']) : 'Serial';
+
+        Telegram::editText($chatId, $msgId, "📺 <b>$title</b>\n{$season}-fasl — qismni tanlang:", [
+            'reply_markup' => json_encode(['inline_keyboard' => Keyboard::episodesPage($seriesId, $season, $eps, $page)]),
+        ]);
+        State::setMenu($chatId, $msgId);
     }
 
     private static function filmsPage(int $chatId, int $msgId, int $page): void
