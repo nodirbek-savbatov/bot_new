@@ -21,6 +21,12 @@ final class WebApp
     public static function validate(string $initData, string $botToken, int $authTtl = 86400): ?array
     {
         if ($initData === '' || $botToken === '') {
+            // Eng ko'p uchraydigan sabab: initData umuman kelmayapti (SDK/transport)
+            // yoki config'da bot.token bo'sh. Diagnostika uchun aniq yozamiz.
+            Logger::warning('WebApp auth rad etildi: ' . ($initData === '' ? 'no_initdata' : 'no_token'), [
+                'initdata_len' => mb_strlen($initData),
+                'has_token'    => $botToken !== '',
+            ]);
             return null;
         }
 
@@ -34,7 +40,10 @@ final class WebApp
         }
 
         $hash = $data['hash'] ?? '';
-        if ($hash === '') return null;
+        if ($hash === '') {
+            Logger::warning('WebApp auth rad etildi: no_hash', ['keys' => implode(',', array_keys($data))]);
+            return null;
+        }
         // `hash` va (yangi) Ed25519 `signature` data_check_string'ga kirmaydi.
         unset($data['hash'], $data['signature']);
 
@@ -51,18 +60,29 @@ final class WebApp
         $calcHash  = hash_hmac('sha256', $checkString, $secretKey);
 
         if (!hash_equals($calcHash, $hash)) {
-            return null; // imzo mos kelmadi — soxta yoki buzilgan
+            // Imzo mos kelmadi — odatda config'dagi bot.token Mini App egasi bo'lgan
+            // botnikiga to'g'ri kelmaganda yuz beradi (yoki initData buzilgan/soxta).
+            Logger::warning('WebApp auth rad etildi: hash_mismatch', [
+                'auth_date' => $data['auth_date'] ?? '',
+                'keys'      => implode(',', array_keys($data)),
+            ]);
+            return null;
         }
 
         // 4) Eskirgan initData'ni rad etamiz (qayta o'ynatishdan himoya).
         $authDate = (int)($data['auth_date'] ?? 0);
         if ($authTtl > 0 && $authDate > 0 && (time() - $authDate) > $authTtl) {
+            Logger::warning('WebApp auth rad etildi: expired', [
+                'age_sec' => time() - $authDate,
+                'ttl'     => $authTtl,
+            ]);
             return null;
         }
 
         // 5) Foydalanuvchi JSON'ini ajratamiz.
         $user = json_decode($data['user'] ?? '', true);
         if (!is_array($user) || empty($user['id'])) {
+            Logger::warning('WebApp auth rad etildi: no_user');
             return null;
         }
 

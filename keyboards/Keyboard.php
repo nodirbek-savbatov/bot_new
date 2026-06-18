@@ -5,22 +5,11 @@
  */
 final class Keyboard
 {
-    /**
-     * Web App tugmasi qatorini qaytaradi (config'da HTTPS url bo'lsa).
-     * Bo'lmasa bo'sh massiv — keyboardlar tugmasiz ishlayveradi.
-     */
-    private static function webAppRow(): array
-    {
-        $webapp = (string)Config::get('webapp.url', '');
-        if ($webapp === '') {
-            return [];
-        }
-        return [['text' => '🎬 Kino App', 'web_app' => ['url' => $webapp]]];
-    }
-
     /** Pastki asosiy menyu (reply keyboard). */
     public static function main(bool $isAdmin = false): string
     {
+        // Web App "🎬 Kino App" reply-keyboardda EMAS — chetdagi menyu tugmasi
+        // (setChatMenuButton, install.php) orqali ochiladi.
         $kb = [
             [['text' => '🔍 Kino qidirish'], ['text' => '📺 Seriallar']],
             [['text' => '🆕 Yangi filmlar'], ['text' => '⭐ Top filmlar']],
@@ -28,12 +17,6 @@ final class Keyboard
             [['text' => '🤖 AI Yordamchi'],  ['text' => '👤 Profil']],
             [['text' => '📨 Adminga xabar']],
         ];
-
-        // Web App tugmasi (reply-keyboard web_app — sendData() shu yo'l orqali ishlaydi).
-        $row = self::webAppRow();
-        if ($row !== []) {
-            array_unshift($kb, $row);
-        }
 
         if ($isAdmin) {
             $kb[] = [['text' => '👑 Admin panel']];
@@ -52,12 +35,6 @@ final class Keyboard
             [['text' => '🔐 Adminlar'],         ['text' => '⚙️ Sozlamalar']],
             [['text' => '🪙 Nano Coin'],        ['text' => '👤 Oddiy rejim']],
         ];
-
-        // Web App tugmasi — admin rejimida ham eng tepada ko'rinsin.
-        $row = self::webAppRow();
-        if ($row !== []) {
-            array_unshift($kb, $row);
-        }
 
         return json_encode([
             'resize_keyboard' => true,
@@ -235,16 +212,12 @@ final class Keyboard
         return [[['text' => '✍️ Javob berish', 'callback_data' => "reply:$userId"]]];
     }
 
-    /** Profil inline tugmalari: kunlik bonus (agar mavjud) + Web App. */
+    /** Profil inline tugmalari: kunlik bonus (agar mavjud). */
     public static function profileInline(bool $dailyAvailable): array
     {
         $kb = [];
         if ($dailyAvailable) {
             $kb[] = [['text' => '🎁 Kunlik bonusni olish', 'callback_data' => 'nano_daily']];
-        }
-        $row = self::webAppRow();
-        if ($row !== []) {
-            $kb[] = $row;
         }
         return $kb;
     }

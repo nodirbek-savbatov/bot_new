@@ -6,6 +6,22 @@
 (function () {
     const wa = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 
+    /**
+     * Auth uchun xom initData. Ba'zi ochilish usullarida `wa.initData` bo'sh qoladi,
+     * lekin Telegram uni URL hash'iga (`tgWebAppData`) qo'yadi — shu yerdan tiklaymiz.
+     * Backend kutadigan format bilan bir xil ("key=val&...&hash=...").
+     */
+    function readInitData() {
+        if (wa && wa.initData) return wa.initData;
+        try {
+            const fromHash = new URLSearchParams((window.location.hash || '').replace(/^#/, '')).get('tgWebAppData');
+            if (fromHash) return fromHash;
+            const fromQuery = new URLSearchParams(window.location.search).get('tgWebAppData');
+            if (fromQuery) return fromQuery;
+        } catch (e) { /* ignore */ }
+        return '';
+    }
+
     function applyTheme() {
         if (!wa || !wa.themeParams) return;
         const root = document.documentElement;
@@ -30,8 +46,9 @@
     const TG = {
         wa,
         available: !!wa,
-        // Auth uchun xom initData (backendga yuboriladi)
-        initData: wa ? (wa.initData || '') : '',
+        // Auth uchun xom initData (backendga yuboriladi). Getter — har murojaatda
+        // qaytadan o'qiladi (SDK kech to'ldirsa yoki hash'da bo'lsa ham ishlaydi).
+        get initData() { return readInitData(); },
         user: wa && wa.initDataUnsafe ? wa.initDataUnsafe.user : null,
 
         ready() {

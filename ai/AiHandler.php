@@ -147,9 +147,10 @@ final class AiHandler
 
         $balance = NanoRepo::balance($cid);
 
-        // Bazada mos kino topilmagan bo'lsa — javob tagiga "Admindan so'rash" tugmasi.
+        // AI aniq kino TAVSIYA qildi-yu, u bazada topilmagan bo'lsa — "Admindan so'rash" tugmasi.
+        // Oddiy suhbatda (tavsiya yo'q) yoki kino bazada topilganda tugma chiqmaydi.
         $opts = [];
-        if ((int)($res['dbCount'] ?? 0) === 0) {
+        if (($res['recommended'] ?? false) && (int)($res['dbCount'] ?? 0) === 0) {
             $opts['reply_markup'] = json_encode(['inline_keyboard' => Keyboard::askAdmin()]);
         }
 

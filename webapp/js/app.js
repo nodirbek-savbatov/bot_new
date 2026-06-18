@@ -205,9 +205,14 @@
 
         const res = await API.init();
         if (!res.ok) {
-            if (res.error === 'auth') { Toast.error('Telegram orqali oching'); }
-            else Toast.error('Ma\'lumotni yuklab bo\'lmadi');
-            if (latestEl) empty(latestEl, '😕', 'Yuklanmadi', 'Internet aloqasini tekshiring');
+            if (res.error === 'auth') {
+                // SDK bor (Telegram ichidamiz) bo'lsa-yu auth o'tmasa — bu sozlama/server muammosi,
+                // "Telegram orqali oching" emas (chalg'ituvchi bo'lardi).
+                Toast.error(TG.available ? 'Avtorizatsiya xatosi. Ilovani qaytadan oching.' : 'Iltimos, ilovani Telegram orqali oching');
+            } else {
+                Toast.error('Ma\'lumotni yuklab bo\'lmadi');
+            }
+            if (latestEl) empty(latestEl, '😕', 'Yuklanmadi', TG.available ? 'Avtorizatsiya o\'tmadi — qaytadan oching' : 'Telegram orqali oching');
             return;
         }
         bot = (res.data && res.data.bot) || '';

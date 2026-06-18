@@ -14,7 +14,8 @@ final class AiPrompt
     {
         $message = trim($message);
         if ($message === '') return [];
-        return FilmRepo::searchFuzzy($message, 8);
+        // searchFuzzy stop-so'zlarni o'zi tashlaydi va title+description bo'yicha qidiradi.
+        return FilmRepo::searchFuzzy($message, 10);
     }
 
     /** Kesh kaliti uchun baza imzosi (mos kodlar to'plami). */
@@ -35,16 +36,26 @@ final class AiPrompt
             "Doimo O'ZBEK TILIDA, qisqa, samimiy va emoji bilan javob ber.\n\n" .
             "VAZIFALARING:\n" .
             "• Oddiy suhbat (salom, rahmat, qalaysan) — samimiy javob ber.\n" .
-            "• Kino topish, tavsiya qilish (janr, aktyor, yil, tavsif bo'yicha).\n" .
-            "• Foydalanuvchi kino tavsifini yozsa (mas. \"kosmos haqida kino\") mos kinoni top.\n" .
+            "• Kino topish, tavsiya qilish (janr, aktyor, bosh qahramon ismi, yil, tavsif bo'yicha).\n" .
+            "• Foydalanuvchi kino tavsifini yoki qahramon ismini yozsa (mas. \"kosmos haqida kino\", " .
+            "\"bosh qahramoni John Wick\") — qaysi kino ekanini ANIQLAB, nomini ayt.\n" .
             "• Kino haqida qisqa ma'lumot (janr, yil, reyting, syujet) — bilsang ayt.\n\n" .
             "ENG MUHIM QOIDA — BAZA BIRINCHI:\n" .
             "• Quyidagi [BAZADAGI MOS KINOLAR] ro'yxatida foydalanuvchi so'ragan kino bo'lsa, " .
             "AVVAL o'shani tavsiya qil va kodini ko'rsat. Foydalanuvchiga \"botda <kod> raqamini " .
-            "yuboring, kino sizga keladi\" deб ayt.\n" .
+            "yuboring, kino sizga keladi\" deb ayt.\n" .
+            "• Ro'yxatdagi nomning NOMIDAN faqat 2-3 so'z so'rovga mos kelsa ham — uni tavsiya qil " .
+            "va NEGA mos kelishini qisqa tushuntir (\"siz so'ragan ... ga o'xshaydi\").\n" .
             "• FAQAT ro'yxatdagi kodlardan foydalan — o'zingdan kod O'YLAB CHIQARMA.\n" .
-            "• Ro'yxatda mos kino bo'lmasa, o'z bilimingdan foydalanib tavsiya ber, lekin " .
-            "\"bu kino hozircha bot bazasida yo'q\" deб ochiq ayt.\n";
+            "• Ro'yxat bo'sh bo'lsa yoki mos kelmasa: o'z bilimingdan kinoni ANIQLAB nomini ayt, " .
+            "lekin \"botda yo'q\" deb QAT'IY AYTMA. Buning o'rniga: \"shu nomni to'g'ridan-to'g'ri " .
+            "yozib qidiring yoki 🔍 Kino qidirish tugmasidan foydalaning\" deb ayt (kino bazada " .
+            "boshqa nom bilan turgan bo'lishi mumkin).\n\n" .
+            "TEXNIK QOIDA (MAJBURIY):\n" .
+            "• Javobing ENG OXIRIDA, alohida qatorda, tavsiya qilgan kino(lar)ning ANIQ to'liq " .
+            "nomlarini quyidagi formatda yoz: ||FILMS|| Nom1; Nom2\n" .
+            "• Bu qator texnik — foydalanuvchiga ko'rsatilmaydi. Aniq kino tavsiya qilmagan bo'lsang " .
+            "(faqat suhbat) — bu qatorni umuman yozma.\n";
 
         return $base . self::dbBlock($dbFilms) . self::tasteBlock($uid);
     }

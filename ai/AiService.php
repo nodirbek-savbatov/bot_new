@@ -40,26 +40,88 @@ final class AiService
             $ctxDigest,
         ]));
 
-        // Bazada nechta moslik topildi (AiHandler "admindan so'rash" tugmasini shu asosda ko'rsatadi).
-        $dbCount = count($dbFilms);
+        // Xom javob (||FILMS|| markeri bilan) keshlanadi — shunda kesh-hit'da ham
+        // bazani qaytadan tekshira olamiz (baza o'zgargan bo'lishi mumkin).
+        $raw    = AiRepo::cacheGet($key, $ttl);
+        $cached = $raw !== null;
 
-        $cached = AiRepo::cacheGet($key, $ttl);
-        if ($cached !== null) {
-            return ['ok' => true, 'text' => $cached, 'cached' => true, 'dbCount' => $dbCount];
+        if (!$cached) {
+            $contents   = $history;
+            $contents[] = ['role' => 'user', 'content' => $message];
+
+            $res = GeminiClient::generate($contents, $system);
+            if (!($res['ok'] ?? false)) {
+                return ['ok' => false, 'error' => (string)($res['error'] ?? 'unknown'), 'text' => '', 'dbCount' => count($dbFilms)];
+            }
+            $raw = (string)$res['text'];
+            AiRepo::cacheSet($key, $raw);
         }
 
-        // Tarix + joriy savol.
-        $contents = $history;
-        $contents[] = ['role' => 'user', 'content' => $message];
+        // Marker'ni o'qib, tavsiya qilingan nomlarni bazadan qaytadan qidiramiz
+        // (AI nomni bilsa-yu xom qidiruv topa olmagan holatni yopadi).
+        $resolved = self::resolveDbMatches($raw);
+        $text     = $resolved['text'];
+        $films    = $resolved['films'];
 
-        $res = GeminiClient::generate($contents, $system);
-        if (!($res['ok'] ?? false)) {
-            return ['ok' => false, 'error' => (string)($res['error'] ?? 'unknown'), 'text' => '', 'dbCount' => $dbCount];
+        if ($films) {
+            $text .= "\n\n🎬 **Botda mavjud:**";
+            foreach ($films as $f) {
+                $icon  = ($f['type'] === 'serial') ? '📺' : '🎬';
+                $text .= "\n$icon «{$f['title']}» — kod `{$f['code']}`";
+            }
         }
 
-        $text = (string)$res['text'];
-        AiRepo::cacheSet($key, $text);
+        return [
+            'ok'          => true,
+            'text'        => $text,
+            'cached'      => $cached,
+            'recommended' => $resolved['titles'] !== [], // AI aniq kino tavsiya qildimi
+            'dbCount'     => count($films),               // shulardan nechtasi bazada bor
+        ];
+    }
 
-        return ['ok' => true, 'text' => $text, 'cached' => false, 'dbCount' => $dbCount];
+    /**
+     * AI javobidagi `||FILMS|| Nom1; Nom2` markerini o'qiydi:
+     *   - markerni (va undan keyingi qismni) matndan olib tashlaydi (foydalanuvchiga ko'rsatilmaydi);
+     *   - har bir nomni bazadan qidiradi va ishonchli mosini (substring yoki yuqori relevance) oladi.
+     * @return array{text:string, films:array<int,array>, titles:array<string>}
+     */
+    private static function resolveDbMatches(string $raw): array
+    {
+        $titles = [];
+        $clean  = trim($raw);
+
+        if (preg_match('/\|\|\s*FILMS\s*\|\|\s*(.*)$/su', $raw, $m)) {
+            $pos = mb_strpos($raw, $m[0]);
+            if ($pos !== false) {
+                // Marker oldidagi ortiqcha markdown belgilarini ham tozalaymiz (AI uni **bilan** o'rasa).
+                $clean = rtrim(trim(mb_substr($raw, 0, $pos)), " \t\r\n*_|");
+            }
+            foreach (preg_split('/[;\n]+/u', (string)$m[1]) as $t) {
+                $t = trim($t, " \t\r\n\"'«»·•—-");
+                if ($t !== '' && mb_strlen($t, 'UTF-8') >= 2) {
+                    $titles[] = $t;
+                }
+                if (count($titles) >= 5) break; // ko'pi bilan 5 ta
+            }
+        }
+
+        $films = [];
+        foreach ($titles as $t) {
+            $tl = mb_strtolower($t, 'UTF-8');
+            foreach (FilmRepo::searchFuzzy($t, 3) as $f) {
+                $ft = mb_strtolower((string)$f['title'], 'UTF-8');
+                // Ishonchli moslik: nom o'zaro substring bo'lsa yoki relevance yuqori bo'lsa.
+                $strong = (mb_strpos($ft, $tl) !== false)
+                       || (mb_strpos($tl, $ft) !== false)
+                       || ((int)($f['relevance'] ?? 0) >= 240);
+                if ($strong) {
+                    $films[(int)$f['code']] = $f; // kod bo'yicha noyob
+                    break;
+                }
+            }
+        }
+
+        return ['text' => $clean, 'films' => array_values($films), 'titles' => $titles];
     }
 }

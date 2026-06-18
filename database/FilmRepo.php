@@ -69,12 +69,46 @@ final class FilmRepo
     }
 
     /**
-     * Fuzzy nom qidiruvi — ko'p so'zli, case-insensitive, relevance bo'yicha tartiblangan.
-     *  - So'rov so'zlarga bo'linadi; har bir so'z alohida LIKE shart bo'ladi.
-     *  - Qator topiladi agar KAMIDA bitta so'z mos kelsa (OR), shu bilan
-     *    "tez gazabli" → "Tez va G'azabli" kabi natijalarni ham qaytaradi.
-     *  - Tartib: aniq tenglik > boshlanishi mos > to'liq ibora ichida > mos so'zlar soni.
-     * Yagona LIKE (searchByName) ko'p so'zli/qisman so'rovlarda topa olmagan kamchilikni yopadi.
+     * Qidiruv "shovqin" so'zlari — so'rovni tozalashda tashlanadi (o'zbek + ruscha + inglizcha,
+     * AI/suhbat konteksti uchun). Bularning hammasi tashlansa va hech narsa qolmasa,
+     * asl so'zlar (stop-so'zsiz) qaytariladi — bo'sh natija bo'lmasligi uchun.
+     */
+    private const STOP_WORDS = [
+        'kino', 'film', 'filmi', 'filmni', 'serial', 'seriali', 'serialni', 'multik',
+        'haqida', 'haqidagi', 'nomli', 'degan', 'bilan', 'uchun', 'kabi', 'yoki',
+        'menga', 'iltimos', 'tavsiya', 'qil', 'qila', 'qiling', 'qilib',
+        'topib', 'ber', 'bering', 'boring', 'kerak', 'istayman', 'xohlayman',
+        'korsat', "ko'rsat", 'kormoqchiman', 'qidir', 'qidiryapman', 'qaysi', 'qanaqa', 'qanday',
+        'bormi', 'yangi', 'eng', 'zor', 'yaxshi', 'mashhur', 'janr', 'janri', 'yilgi',
+        'про', 'фильм', 'кино', 'сериал', 'about', 'movie', 'the', 'and', 'with',
+    ];
+
+    /** So'rovni qidiruv so'zlariga ajratadi (stop-so'zlarsiz, >=2 belgi). */
+    private static function searchWords(string $q): array
+    {
+        $all = array_values(array_filter(
+            preg_split('/\s+/u', mb_strtolower($q, 'UTF-8')) ?: [],
+            static fn($w) => mb_strlen($w, 'UTF-8') >= 2
+        ));
+        // Stop-so'zlarni olib tashlaymiz.
+        $words = array_values(array_filter(
+            $all,
+            static fn($w) => !in_array($w, self::STOP_WORDS, true)
+        ));
+        // Hammasi stop-so'z bo'lib chiqsa — asl so'zlarni qaytaramiz (bo'sh qolmasin).
+        if (!$words) $words = $all;
+        if (!$words) $words = [mb_strtolower(trim($q), 'UTF-8')];
+        return $words;
+    }
+
+    /**
+     * Fuzzy qidiruv — nom (title) VA tavsif (description) bo'yicha, relevance tartibida.
+     *  - So'rov stop-so'zlardan tozalanib so'zlarga ajratiladi; har so'z alohida LIKE shart.
+     *  - Qator topiladi agar KAMIDA bitta so'z title YOKI description'da uchrasa (OR),
+     *    shu bilan "tez gazabli" → "Tez va G'azabli", "kosmos haqida" → tavsifida kosmos
+     *    bo'lgan kinolar, hatto aktyor/qahramon ismi tavsifda bo'lsa — topiladi.
+     *  - Tartib: aniq tenglik > boshlanishi mos > to'liq ibora > title'dagi mos so'zlar >
+     *    tavsifdagi mos so'zlar (title ancha og'irroq baholanadi).
      */
     public static function searchFuzzy(string $q, int $limit = 20): array
     {
@@ -82,12 +116,7 @@ final class FilmRepo
         if ($q === '') return [];
         $limit = max(1, min($limit, 50));
 
-        // So'rovni so'zlarga ajratamiz (qisqa "shovqin" so'zlarni tashlaymiz).
-        $words = array_values(array_filter(
-            explode(' ', mb_strtolower($q, 'UTF-8')),
-            static fn($w) => mb_strlen($w, 'UTF-8') >= 2
-        ));
-        if (!$words) $words = [mb_strtolower($q, 'UTF-8')];
+        $words = self::searchWords($q);
 
         $esc = static fn(string $s): string =>
             str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $s);
@@ -97,18 +126,24 @@ final class FilmRepo
 
         // Placeholderlar SQL ichida SELECT (relevance), keyin WHERE tartibida keladi —
         // shuning uchun parametrlarni ham aynan shu tartibda alohida yig'amiz.
-        $score = ["(CASE WHEN LOWER(title) = ?    THEN 1000 ELSE 0 END)",  // aniq tenglik
-                  "(CASE WHEN LOWER(title) LIKE ? THEN 500  ELSE 0 END)",  // boshlanishi mos
-                  "(CASE WHEN LOWER(title) LIKE ? THEN 300  ELSE 0 END)"]; // to'liq ibora ichida
-        $scoreParams = [$ql, $esc($ql) . '%', $whole];
+        $score = ["(CASE WHEN LOWER(title) = ?    THEN 1000 ELSE 0 END)",  // aniq tenglik (title)
+                  "(CASE WHEN LOWER(title) LIKE ? THEN 500  ELSE 0 END)",  // boshlanishi mos (title)
+                  "(CASE WHEN LOWER(title) LIKE ? THEN 300  ELSE 0 END)",  // to'liq ibora (title)
+                  "(CASE WHEN LOWER(COALESCE(description,'')) LIKE ? THEN 120 ELSE 0 END)"]; // to'liq ibora (tavsif)
+        $scoreParams = [$ql, $esc($ql) . '%', $whole, $whole];
 
         $conds       = [];
         $whereParams = [];
         foreach ($words as $w) {
             $like          = '%' . $esc($w) . '%';
-            $score[]       = "(CASE WHEN LOWER(title) LIKE ? THEN 50 ELSE 0 END)"; // har mos so'z
+            // Title'dagi mos so'z — yuqori vazn; tavsifdagi — pastroq.
+            $score[]       = "(CASE WHEN LOWER(title) LIKE ? THEN 60 ELSE 0 END)";
             $scoreParams[] = $like;
-            $conds[]       = "LOWER(title) LIKE ?";
+            $score[]       = "(CASE WHEN LOWER(COALESCE(description,'')) LIKE ? THEN 15 ELSE 0 END)";
+            $scoreParams[] = $like;
+            // Qator topilishi uchun: so'z title YOKI description'da bo'lsa kifoya.
+            $conds[]       = "(LOWER(title) LIKE ? OR LOWER(COALESCE(description,'')) LIKE ?)";
+            $whereParams[] = $like;
             $whereParams[] = $like;
         }
 
