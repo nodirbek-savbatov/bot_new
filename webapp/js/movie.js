@@ -31,9 +31,14 @@
                 ).join('') + `</div>`;
         }
 
+        const heroStyle = f.poster
+            ? `background-image:url("${String(f.poster).replace(/"/g, '%22')}");background-size:cover;background-position:center`
+            : `background:${App.gradient(f.code)}`;
+        const heroBig = f.poster ? '' : `<div class="detail-hero__big">${App.esc(App.initials(f.title))}</div>`;
+
         root.innerHTML =
-            `<div class="detail-hero" style="background:${App.gradient(f.code)}">` +
-                `<div class="detail-hero__big">${App.esc(App.initials(f.title))}</div>` +
+            `<div class="detail-hero" style="${heroStyle}">` +
+                heroBig +
                 `<div class="detail-hero__content">` +
                     `<div class="detail-hero__title">${App.esc(f.title)}</div>` +
                     `<div class="detail-meta">` +

@@ -64,6 +64,7 @@ final class Keyboard
         return [
             [['text' => "✏️ Nomini o'zgartir",   'callback_data' => "etitle:$code"]],
             [['text' => "📝 Tavsifini o'zgartir", 'callback_data' => "edesc:$code"]],
+            [['text' => "🖼 Poster (rasm)",       'callback_data' => "poster:$code"]],
             [['text' => "🗑 O'chirish",           'callback_data' => "del:$code"]],
         ];
     }
@@ -71,10 +72,13 @@ final class Keyboard
     /** Saqlangandan keyin kanalga yuborish tasdig'i. */
     public static function postConfirm(int $code): array
     {
-        return [[
-            ['text' => '📢 Kanalga yuborish', 'callback_data' => "post:$code"],
-            ['text' => "❌ Yo'q",             'callback_data' => "nopost:$code"],
-        ]];
+        return [
+            [['text' => "🖼 Poster qo'yish", 'callback_data' => "poster:$code"]],
+            [
+                ['text' => '📢 Kanalga yuborish', 'callback_data' => "post:$code"],
+                ['text' => "❌ Yo'q",             'callback_data' => "nopost:$code"],
+            ],
+        ];
     }
 
     /** O'chirishni tasdiqlash. */

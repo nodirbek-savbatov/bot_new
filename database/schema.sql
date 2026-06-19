@@ -30,8 +30,9 @@ CREATE TABLE IF NOT EXISTS admins (
 
 -- ---- Seriallar (guruhlash — callback_data qisqa bo'lishi uchun) ----
 CREATE TABLE IF NOT EXISTS series (
-    id    INT          NOT NULL AUTO_INCREMENT,
-    title VARCHAR(255) NOT NULL,
+    id     INT          NOT NULL AUTO_INCREMENT,
+    title  VARCHAR(255) NOT NULL,
+    poster VARCHAR(255) NOT NULL DEFAULT '',  -- Web App posteri (bitta serialga bitta)
     PRIMARY KEY (id),
     UNIQUE KEY uq_title (title)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS films (
     series_id   INT          NULL,
     season      INT          NOT NULL DEFAULT 0,
     episode     INT          NOT NULL DEFAULT 0,
+    poster      VARCHAR(255) NOT NULL DEFAULT '',  -- Web App posteri (faqat type='film')
     views       INT          NOT NULL DEFAULT 0,
     likes       INT          NOT NULL DEFAULT 0,
     dislikes    INT          NOT NULL DEFAULT 0,

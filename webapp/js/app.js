@@ -90,11 +90,15 @@
     function posterCard(f) {
         const el = document.createElement('div');
         el.className = 'card pressable';
+        // Rasm bo'lsa — img (yuklanmasa o'zini olib tashlaydi, gradient qoladi); aks holda harf.
+        const inner = f.poster
+            ? `<img class="poster__img" src="${esc(f.poster)}" alt="" loading="lazy" onerror="this.remove()">`
+            : `<span class="poster__letter">${esc(initials(f.title))}</span>`;
         el.innerHTML =
             `<div class="poster" style="background:${gradient(f.code)}">` +
+                inner +
                 `<span class="poster__badge">${esc(typeBadge(f))}</span>` +
                 (f.is_favorite ? `<span class="poster__fav on">❤️</span>` : '') +
-                `<span class="poster__letter">${esc(initials(f.title))}</span>` +
                 `<span class="poster__meta">👁 ${fmtNum(f.views)} · 👍 ${fmtNum(f.likes)}</span>` +
             `</div>` +
             `<div class="card__title">${esc(f.title)}</div>`;
@@ -102,13 +106,20 @@
         return el;
     }
 
+    // CSS background uchun xavfsiz url() (URL server tomonidan beriladi, faqat ehtiyot chorasi).
+    function bgImage(url) {
+        return `background-image:url("${String(url).replace(/"/g, '%22')}");background-size:cover;background-position:center`;
+    }
+
     // ---------- Render: ro'yxat qatori ----------
     function listRow(f, rank) {
         const el = document.createElement('div');
         el.className = 'mrow pressable';
+        const posterStyle = f.poster ? bgImage(f.poster) : `background:${gradient(f.code)}`;
+        const posterText  = f.poster ? '' : esc(initials(f.title));
         el.innerHTML =
             (rank != null ? `<div class="mrow__rank">${rank}</div>` : '') +
-            `<div class="mrow__poster" style="background:${gradient(f.code)}">${esc(initials(f.title))}</div>` +
+            `<div class="mrow__poster" style="${posterStyle}">${posterText}</div>` +
             `<div class="mrow__body">` +
                 `<div class="mrow__title">${esc(f.title)}</div>` +
                 `<div class="mrow__sub">${f.type === 'serial' ? '📺 Serial' : '🎬 Film'} · 👁 ${fmtNum(f.views)} · #${f.code}</div>` +
@@ -221,7 +232,11 @@
         // Hero — eng ko'p ko'rilgan film
         if (heroEl && home.top && home.top.length) {
             const f = home.top[0];
-            heroEl.style.background = gradient(f.code);
+            if (f.poster) {
+                heroEl.style.cssText += ';background-image:url("' + String(f.poster).replace(/"/g, '%22') + '");background-size:cover;background-position:center';
+            } else {
+                heroEl.style.background = gradient(f.code);
+            }
             heroEl.innerHTML =
                 `<div class="hero__content">` +
                 `<div class="hero__kicker">⭐ Eng mashhur</div>` +
@@ -268,8 +283,10 @@
                 d.series.forEach(s => {
                     const row = document.createElement('div');
                     row.className = 'list__row pressable';
+                    const pStyle = s.poster ? bgImage(s.poster) : `background:${gradient(s.id * 7)}`;
+                    const pText  = s.poster ? '' : '📺';
                     row.innerHTML =
-                        `<div class="mrow__poster" style="width:36px;height:36px;border-radius:8px;flex:0 0 36px;background:${gradient(s.id * 7)}">📺</div>` +
+                        `<div class="mrow__poster" style="width:36px;height:36px;border-radius:8px;flex:0 0 36px;${pStyle}">${pText}</div>` +
                         `<div class="list__row-title">${esc(s.title)}</div>` +
                         `<div class="list__chevron">›</div>`;
                     row.onclick = () => goSearch(s.title);

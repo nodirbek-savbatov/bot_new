@@ -63,6 +63,13 @@
     transition: transform var(--dur-fast) var(--ease-ios);
 }
 .card:active .poster { transform: scale(0.96); }
+/* Haqiqiy poster rasmi — gradient ustini to'la qoplaydi; overlay'lar (badge/fav/meta) tepada qoladi. */
+.poster__img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
 .poster__letter {
     font-size: var(--fs-3xl); font-weight: var(--fw-bold);
     text-shadow: 0 2px 12px rgba(0,0,0,0.35);

@@ -8,6 +8,10 @@ logs/*.txt
 # Eski versiya
 bot.legacy.php
 
+# Web App posterlar (admin yuklaydigan rasmlar — repoda saqlanmaydi, papka qoladi)
+webapp/posters/*
+!webapp/posters/.gitkeep
+
 # Vaqtinchalik
 *.tmp
 .DS_Store

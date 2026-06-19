@@ -141,6 +141,48 @@ final class Telegram
         return self::call('getChatMember', ['chat_id' => $chatId, 'user_id' => $userId]);
     }
 
+    /**
+     * Faylni file_id bo'yicha yuklab oladi va $destPath ga yozadi.
+     * getFile → file_path → https://api/file/bot<token>/<file_path>.
+     * Muvaffaqiyatsiz bo'lsa yarim yozilgan faylni o'chiradi va false qaytaradi.
+     */
+    public static function downloadFile(string $fileId, string $destPath): bool
+    {
+        $info = self::call('getFile', ['file_id' => $fileId]);
+        $filePath = $info['result']['file_path'] ?? '';
+        if (!is_string($filePath) || $filePath === '') {
+            Logger::warning('downloadFile: getFile file_path bo\'sh', ['file_id' => $fileId]);
+            return false;
+        }
+
+        $url = self::$api . '/file/bot' . self::$token . '/' . $filePath;
+        $fp  = @fopen($destPath, 'wb');
+        if (!$fp) {
+            Logger::error('downloadFile: faylni yozib bo\'lmadi', ['dest' => $destPath]);
+            return false;
+        }
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_FILE           => $fp,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT        => 60,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+        curl_exec($ch);
+        $errno    = curl_errno($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        fclose($fp);
+
+        if ($errno !== 0 || $httpCode !== 200 || !is_file($destPath) || filesize($destPath) === 0) {
+            @unlink($destPath);
+            Logger::warning('downloadFile: yuklab bo\'lmadi', ['file_id' => $fileId, 'http' => $httpCode]);
+            return false;
+        }
+        return true;
+    }
+
     /** Bot ID (tokendan olinadi: "<id>:<hash>"). */
     public static function botId(): int
     {

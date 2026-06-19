@@ -62,8 +62,10 @@ try {
         ) === 0;
     };
     $migrations = [
-        ['users', 'nano_balance', "ALTER TABLE users ADD COLUMN nano_balance INT NOT NULL DEFAULT 0"],
-        ['users', 'last_daily',   "ALTER TABLE users ADD COLUMN last_daily DATETIME NULL"],
+        ['users',  'nano_balance', "ALTER TABLE users ADD COLUMN nano_balance INT NOT NULL DEFAULT 0"],
+        ['users',  'last_daily',   "ALTER TABLE users ADD COLUMN last_daily DATETIME NULL"],
+        ['films',  'poster',       "ALTER TABLE films ADD COLUMN poster VARCHAR(255) NOT NULL DEFAULT '' AFTER episode"],
+        ['series', 'poster',       "ALTER TABLE series ADD COLUMN poster VARCHAR(255) NOT NULL DEFAULT '' AFTER title"],
     ];
     $applied = 0;
     foreach ($migrations as [$table, $col, $ddl]) {
@@ -72,7 +74,7 @@ try {
             $applied++;
         }
     }
-    $out($applied > 0 ? "✅ Migratsiya: $applied ta ustun qo'shildi (users)" : '✅ Migratsiya: ustunlar mavjud');
+    $out($applied > 0 ? "✅ Migratsiya: $applied ta ustun qo'shildi" : '✅ Migratsiya: ustunlar mavjud');
 } catch (\Throwable $e) {
     $out('⚠️ Migratsiya xatosi: ' . $e->getMessage());
 }

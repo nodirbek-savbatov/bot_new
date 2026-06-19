@@ -18,10 +18,13 @@ final class AdminHandler
         $text     = trim($ctx['text']);
         $step     = $ctx['step'];
         $hasMedia = $ctx['video'] || $ctx['document'];
+        $hasImage = !empty($ctx['photo'])
+            || ($ctx['document'] && str_starts_with((string)($ctx['document']->mime_type ?? ''), 'image/'));
 
-        // ---- 1) VIDEO/DOCUMENT steplari (matn steplaridan oldin) ----
+        // ---- 1) VIDEO/DOCUMENT/RASM steplari (matn steplaridan oldin) ----
         if ($step === 'film_video' && $hasMedia)   return self::filmVideo($ctx);
         if ($step === 'serial_video' && $hasMedia) return self::serialVideo($ctx);
+        if ($step === 'set_poster' && $hasImage)   return self::setPoster($ctx);
 
         // Admin tugmasi bosilsa — yarim qolgan stepni tozalaymiz
         if (in_array($text, self::ADMIN_BUTTONS, true)) {
@@ -103,6 +106,7 @@ final class AdminHandler
             case 'edit_find':        return self::editFind($ctx);
             case 'edit_title':       return self::editTitle($ctx);
             case 'edit_desc':        return self::editDesc($ctx);
+            case 'set_poster':       return self::setPosterPrompt($ctx);
             case 'delete_film':      return self::deleteFilm($ctx);
             case 'admin_add':        return self::adminAdd($ctx);
             case 'broadcast_all':    return self::broadcastAll($ctx);
@@ -375,6 +379,71 @@ final class AdminHandler
         FilmRepo::update((int)($d['edit_code'] ?? 0), ['description' => $desc]);
         State::clear($cid);
         showMenu($cid, "✅ Tavsif yangilandi.");
+        return true;
+    }
+
+    // ================= POSTER =================
+
+    /**
+     * 'set_poster' stepi — admin poster rasmini yuboradi.
+     * Film bo'lsa → film posteri; serial bo'lsa → serial posteri (barcha qismlarga umumiy).
+     * Rasm photo yoki rasm-document sifatida qabul qilinadi.
+     */
+    private static function setPoster(array $ctx): bool
+    {
+        $cid  = $ctx['cid'];
+        $d    = State::data($cid);
+        $code = (int)($d['poster_code'] ?? 0);
+
+        // Rasm file_id sini ajratamiz (photo — eng katta o'lcham; yoki rasm-document).
+        $fileId = '';
+        if (!empty($ctx['photo']) && is_array($ctx['photo'])) {
+            $sizes  = $ctx['photo'];
+            $last   = end($sizes);
+            $fileId = (string)($last->file_id ?? '');
+        } elseif ($ctx['document'] && str_starts_with((string)($ctx['document']->mime_type ?? ''), 'image/')) {
+            $fileId = (string)($ctx['document']->file_id ?? '');
+        }
+
+        if ($fileId === '') {
+            return self::setPosterPrompt($ctx);
+        }
+
+        $film = FilmRepo::get($code);
+        if (!$film) {
+            State::clear($cid);
+            showMenu($cid, "❌ Film topilmadi.");
+            return true;
+        }
+
+        // Serial qismi → serial posteri (umumiy); aks holda film posteri.
+        if ($film['type'] === 'serial' && !empty($film['series_id'])) {
+            $file = savePoster($fileId, 'series_' . (int)$film['series_id']);
+            if ($file !== null) FilmRepo::setSeriesPoster((int)$film['series_id'], $file);
+        } else {
+            $file = savePoster($fileId, 'film_' . (int)$film['code']);
+            if ($file !== null) FilmRepo::setFilmPoster((int)$film['code'], $file);
+        }
+
+        State::clear($cid);
+        if ($file !== null) {
+            showMenu($cid,
+                "✅ <b>Poster saqlandi!</b> Web App'da ko'rinadi.\n\n" . filmCaption($film),
+                Keyboard::editFilm($code)
+            );
+        } else {
+            showMenu($cid, "❌ Posterni saqlab bo'lmadi. Qaytadan urinib ko'ring.", Keyboard::cancel());
+        }
+        return true;
+    }
+
+    /** Rasm o'rniga matn kelganda — qayta so'rov (state saqlanadi). */
+    private static function setPosterPrompt(array $ctx): bool
+    {
+        showMenu($ctx['cid'],
+            "🖼 Iltimos, poster <b>rasmini</b> yuboring (foto yoki rasm fayli).\n❌ Bekor qilish uchun /bekor.",
+            Keyboard::cancel()
+        );
         return true;
     }
 

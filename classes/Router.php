@@ -34,6 +34,7 @@ final class Router
             'text'     => (string)($m->text ?? ($m->caption ?? '')),
             'video'    => $m->video ?? null,
             'document' => $m->document ?? null,
+            'photo'    => $m->photo ?? null,
             'from'     => $from,
             'name'     => $from ? fullName($from) : '',
             'username' => $from->username ?? '',

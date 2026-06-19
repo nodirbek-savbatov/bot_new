@@ -316,6 +316,31 @@ final class FilmRepo
         Database::execute("UPDATE films SET " . implode(', ', $set) . " WHERE code = ?", $params);
     }
 
+    /** Film posterini o'rnatadi (faqat type='film' uchun ishlatiladi). */
+    public static function setFilmPoster(int $code, string $file): void
+    {
+        Database::execute("UPDATE films SET poster = ? WHERE code = ?", [$file, $code]);
+    }
+
+    /** Serial posterini o'rnatadi (bitta serialga bitta — barcha qismlarga umumiy). */
+    public static function setSeriesPoster(int $seriesId, string $file): void
+    {
+        Database::execute("UPDATE series SET poster = ? WHERE id = ?", [$file, $seriesId]);
+    }
+
+    /**
+     * Serial posteri (fayl nomi yoki ''). So'rov davomida keshlanadi —
+     * ro'yxatlarda bir serialning bir nechta qismi bo'lsa ham N+1 so'rov bo'lmaydi.
+     */
+    public static function seriesPoster(int $seriesId): string
+    {
+        static $cache = [];
+        if (!array_key_exists($seriesId, $cache)) {
+            $cache[$seriesId] = (string)Database::value("SELECT poster FROM series WHERE id = ?", [$seriesId]);
+        }
+        return $cache[$seriesId];
+    }
+
     public static function delete(int $code): void
     {
         Database::transaction(static function () use ($code): void {

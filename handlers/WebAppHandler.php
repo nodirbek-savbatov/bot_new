@@ -120,8 +120,9 @@ final class WebAppHandler
                 'films_count'  => FilmRepo::countFilms(),
                 'series_count' => count($series),
                 'series'       => array_map(fn($s) => [
-                    'id'    => (int)$s['id'],
-                    'title' => (string)$s['title'],
+                    'id'     => (int)$s['id'],
+                    'title'  => (string)$s['title'],
+                    'poster' => self::posterFromFile(FilmRepo::seriesPoster((int)$s['id'])),
                 ], $series),
                 'top' => array_map(fn($f) => self::dto($f, []), FilmRepo::top(10)),
             ],
@@ -245,7 +246,31 @@ final class WebAppHandler
             'likes'       => (int)$f['likes'],
             'dislikes'    => (int)$f['dislikes'],
             'is_favorite' => in_array($code, $favCodes, true),
+            'poster'      => self::posterUrl($f),
         ];
+    }
+
+    /**
+     * Film/serial uchun poster URL (web app sahifalariga nisbatan: "posters/...").
+     * Serial qismi → serial posteri (umumiy); oddiy film → film posteri.
+     * Poster yo'q bo'lsa '' (frontend gradient'ga qaytadi). Kesh-buzish: ?v=<mtime>.
+     */
+    private static function posterUrl(array $f): string
+    {
+        if (($f['type'] ?? '') === 'serial' && !empty($f['series_id'])) {
+            $file = FilmRepo::seriesPoster((int)$f['series_id']);
+        } else {
+            $file = (string)($f['poster'] ?? '');
+        }
+        return self::posterFromFile($file);
+    }
+
+    /** Fayl nomidan ("film_1.jpg") web app uchun nisbiy URL (kesh-buzish bilan). */
+    private static function posterFromFile(string $file): string
+    {
+        if ($file === '') return '';
+        $v = @filemtime(BASE_PATH . '/webapp/posters/' . $file);
+        return 'posters/' . $file . ($v ? '?v=' . $v : '');
     }
 
     private static function homeData(int $userId): array

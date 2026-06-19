@@ -242,6 +242,33 @@ function postToChannel(int $code): bool
     return true;
 }
 
+// =====================================================================
+// POSTER (Web App)
+// =====================================================================
+
+/** webapp/posters papkasi (bo'lmasa yaratadi). */
+function posterDir(): string
+{
+    $dir = BASE_PATH . '/webapp/posters';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+    return $dir;
+}
+
+/**
+ * Telegram rasmni (file_id) yuklab olib webapp/posters/<name>.jpg ga saqlaydi.
+ * $name barqaror bo'ladi (masalan "film_123" / "series_5") — qayta qo'yilganda
+ * fayl ustiga yoziladi (mtime o'zgaradi → frontend kesh yangilanadi).
+ * Muvaffaqiyatda fayl nomini ("film_123.jpg"), aks holda null qaytaradi.
+ */
+function savePoster(string $fileId, string $name): ?string
+{
+    $filename = $name . '.jpg';
+    $dest     = posterDir() . '/' . $filename;
+    return Telegram::downloadFile($fileId, $dest) ? $filename : null;
+}
+
 /**
  * Foydalanuvchilar ro'yxatini TXT faylga yozadi, yo'lni qaytaradi.
  */

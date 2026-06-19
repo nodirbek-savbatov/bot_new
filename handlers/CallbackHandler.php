@@ -171,6 +171,28 @@ final class CallbackHandler
                 }
                 return;
 
+            case 'poster':
+                if ($isAdmin) {
+                    $code = (int)$a1;
+                    $film = FilmRepo::get($code);
+                    if (!$film) {
+                        Telegram::editText($chatId, $msgId, "❌ Film topilmadi.");
+                        State::setMenu($chatId, null);
+                        return;
+                    }
+                    $label = ($film['type'] === 'serial')
+                        ? "serial posteri\n<i>(barcha qismlarga umumiy bo'ladi)</i>"
+                        : 'film posteri';
+                    State::set($chatId, 'set_poster', ['poster_code' => $code]);
+                    Telegram::editText($chatId, $msgId,
+                        "🖼 <b>Poster</b> — $label\n\n" .
+                        "Poster <b>rasmini</b> yuboring (vertikal, 2:3 nisbat tavsiya etiladi).", [
+                        'reply_markup' => json_encode(['inline_keyboard' => Keyboard::cancel()]),
+                    ]);
+                    State::setMenu($chatId, $msgId);
+                }
+                return;
+
             case 'del':
                 if ($isAdmin) {
                     FilmRepo::delete((int)$a1);
