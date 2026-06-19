@@ -44,8 +44,8 @@ final class WebApp
             Logger::warning('WebApp auth rad etildi: no_hash', ['keys' => implode(',', array_keys($data))]);
             return null;
         }
-        // `hash` va (yangi) Ed25519 `signature` data_check_string'ga kirmaydi.
-        unset($data['hash'], $data['signature']);
+        // Faqat `hash` data_check_string'dan chiqariladi; `signature` esa QOLADI.
+        unset($data['hash']); // FIX: signature data_check_string'DA QOLADI — Telegram hash'ni faqat 'hash'siz hisoblaydi
 
         // 2) data_check_string — saralangan "k=v" lar '\n' bilan.
         ksort($data);

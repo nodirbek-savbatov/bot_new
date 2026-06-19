@@ -11,3 +11,6 @@ bot.legacy.php
 # Vaqtinchalik
 *.tmp
 .DS_Store
+*.bak
+*.bak.*
+config/config.php.bak*
